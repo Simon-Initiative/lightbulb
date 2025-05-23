@@ -24,9 +24,11 @@ const message_type_claim = "https://purl.imsglobal.org/spec/lti/claim/message_ty
 
 const lti_message_hint_claim = "lti_message_hint"
 
-/// Initiates the OIDC login flow. Returns the state and redirect URL.
-/// The state is a random UUID that is used to verify the response from the OIDC provider.
-/// The redirect URL is the URL to which the user should be redirected to complete the login flow.
+/// Builds an OIDC login response for the tool. This function will return a `state` and `redirect_url`.
+/// The `state` is an opaque string that will be used to verify the response from the
+/// OIDC provider. The `redirect_url` is the URL that the user will be redirected to
+/// to authenticate and complete the OIDC login process.
+/// (LTI 1.3 Specification)[https://www.imsglobal.org/spec/lti/v1p3#oidc-login-request] for more details.
 pub fn oidc_login(
   provider: DataProvider,
   params: Dict(String, String),
@@ -113,7 +115,9 @@ fn validate_client_id_exists(
   }
 }
 
-/// Validates the LTI launch
+/// Validates the OIDC login response from the OIDC provider. This function will validate and unpack
+/// the `id_token` and return claims as a map if the token is valid. The `state` parametrer is the
+/// opaque string that was stored in a cookie during `oidc_login` step.
 pub fn validate_launch(
   provider: DataProvider,
   params: Dict(String, String),
