@@ -130,6 +130,5 @@ Further documentation can be found at <https://hexdocs.pm/lightbulb>.
 ## Development
 
 ```sh
-gleam run   # Run the project
 gleam test  # Run the tests
 ```

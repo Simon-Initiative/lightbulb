@@ -1,17 +1,5 @@
-import gleam/io
 import lightbulb/providers/data_provider
 import lightbulb/tool
-
-pub fn main() -> Nil {
-  io.println(
-    "
-  Hello from lightbulb!
-
-  Lightbulb is a Gleam library for building LTI 1.3 tools. Please refer to the
-  documentation for more information: https://hexdocs.pm/lightbulb/
-  ",
-  )
-}
 
 // Export tool module types and functions for convinience
 
