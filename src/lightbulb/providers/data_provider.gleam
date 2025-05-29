@@ -12,35 +12,3 @@ pub type DataProvider {
     get_active_jwk: fn() -> Result(Jwk, String),
   )
 }
-
-pub fn create_nonce(provider: DataProvider) -> Result(Nonce, String) {
-  provider.create_nonce()
-}
-
-pub fn validate_nonce(
-  provider: DataProvider,
-  value: String,
-) -> Result(Nil, String) {
-  provider.validate_nonce(value)
-}
-
-pub fn get_registration(
-  provider: DataProvider,
-  issuer: String,
-  client_id: String,
-) -> Result(Registration, String) {
-  provider.get_registration(issuer, client_id)
-}
-
-pub fn get_deployment(
-  provider: DataProvider,
-  issuer: String,
-  client_id: String,
-  deployment_id: String,
-) -> Result(Deployment, String) {
-  provider.get_deployment(issuer, client_id, deployment_id)
-}
-
-pub fn get_active_jwk(provider: DataProvider) -> Result(Jwk, String) {
-  provider.get_active_jwk()
-}

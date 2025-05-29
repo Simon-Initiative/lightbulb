@@ -43,7 +43,7 @@ pub fn oidc_login(
   use client_id <- result.try(validate_client_id_exists(params))
 
   let assert Ok(state) = uuid.generate_v4()
-  let assert Ok(nonce) = data_provider.create_nonce(provider)
+  let assert Ok(nonce) = provider.create_nonce()
 
   let query_params = [
     #("scope", "openid"),
@@ -103,7 +103,7 @@ fn validate_registration(
     dict.get(params, "client_id") |> result.replace_error("Missing client_id"),
   )
 
-  data_provider.get_registration(provider, issuer, client_id)
+  provider.get_registration(issuer, client_id)
 }
 
 fn validate_client_id_exists(
@@ -160,7 +160,7 @@ fn peek_validate_registration(
 ) -> Result(Registration, String) {
   use #(issuer, client_id) <- result.try(peek_issuer_client_id(id_token))
 
-  data_provider.get_registration(provider, issuer, client_id)
+  provider.get_registration(issuer, client_id)
 }
 
 fn peek_issuer_client_id(id_token) {
@@ -275,7 +275,7 @@ fn validate_deployment(
     decode.string,
   ))
 
-  data_provider.get_deployment(provider, issuer, client_id, deployment_id)
+  provider.get_deployment(issuer, client_id, deployment_id)
 }
 
 fn validate_timestamps(claims: Claims) {
@@ -307,7 +307,7 @@ fn validate_timestamps(claims: Claims) {
 fn validate_nonce(claims: Claims, provider: DataProvider) {
   use nonce <- result.try(get_claim(claims, "nonce", decode.string))
 
-  case data_provider.validate_nonce(provider, nonce) {
+  case provider.validate_nonce(nonce) {
     Ok(_) -> Ok(claims)
 
     Error(e) -> {

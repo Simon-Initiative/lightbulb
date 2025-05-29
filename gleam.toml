@@ -12,6 +12,21 @@ repository = { type = "github", user = "Simon-Initiative", repo = "lightbulb" }
 # For a full reference of all the available options, you can have a look at
 # https://gleam.run/writing-gleam/gleam-toml/.
 
+# Modules that should be considered "internal" and will not be included in
+# generated documentation. Note this currently only affects documentation;
+# public types and functions defined in these modules are still public.
+#
+# Items in this list are "globs" that are matched against module names. See:
+# https://docs.rs/glob/latest/glob/struct.Pattern.html
+internal_modules = [
+  "lightbulb/jwk",
+  "lightbulb/utils/**",
+  "lightbulb/providers/http_mock_provider",
+  "lightbulb/providers/httpc_provider",
+  "lightbulb/providers/memory_provider/tables",
+  "lightbulb/jose",
+]
+
 [dependencies]
 gleam_stdlib = ">= 0.44.0 and < 2.0.0"
 ids = ">= 0.14.0 and < 1.0.0"
