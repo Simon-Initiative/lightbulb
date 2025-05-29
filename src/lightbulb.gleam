@@ -4,7 +4,7 @@ import lightbulb/tool
 // Export tool module types and functions for convinience
 
 /// A DataProvider is a record type that implements the required functions to
-/// provide data to the tool. See the (DataProvider)[lightbulb/providers/data_provider] module for
+/// provide data to the tool. See the `lightbulb/providers/data_provider` module for
 /// more details. 
 pub type DataProvider =
   data_provider.DataProvider
@@ -13,7 +13,6 @@ pub type DataProvider =
 /// The `state` is an opaque string that will be used to verify the response from the
 /// OIDC provider. The `redirect_url` is the URL that the user will be redirected to
 /// to authenticate and complete the OIDC login process.
-/// (LTI 1.3 Specification)[https://www.imsglobal.org/spec/lti/v1p3#oidc-login-request] for more details.
 pub const oidc_login = tool.oidc_login
 
 /// Validates the OIDC login response from the OIDC provider. This function will validate and unpack

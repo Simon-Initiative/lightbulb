@@ -18,6 +18,7 @@ pub const nrps_claim_url = "https://purl.imsglobal.org/spec/lti-nrps/claim/names
 
 pub const context_membership_readonly_claim_url = "https://purl.imsglobal.org/spec/lti-nrps/scope/contextmembership.readonly"
 
+/// Fetches memberships from the NRPS service using the provided HTTP provider, context memberships URL, and access token.
 pub fn fetch_memberships(
   http_provider: HttpProvider,
   context_memberships_url: String,
@@ -77,6 +78,7 @@ pub fn nrps_available(lti_launch_claims: Dict(String, Dynamic)) -> Bool {
   }
 }
 
+/// Returns the context memberships URL from the LTI launch claims.
 pub fn get_membership_service_url(
   lti_launch_claims: Dict(String, Dynamic),
 ) -> Result(String, String) {

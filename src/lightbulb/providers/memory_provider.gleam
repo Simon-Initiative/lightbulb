@@ -1,3 +1,11 @@
+/// Memory Provider is an in-memory data provider for Lightbulb.
+/// 
+/// Warning: Data stored in this provider is not persistent and will be lost!
+/// 
+/// This module can be used to quickly get up and running with Lightbulb
+/// without needing a database or external storage. It's also useful for testing
+/// and development purposes. It's important to note that this provider is not
+/// suitable for production use, as it does not persist data across restarts.
 import birl
 import birl/duration
 import gleam/erlang/process.{type Subject}

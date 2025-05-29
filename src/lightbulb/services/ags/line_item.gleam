@@ -2,6 +2,7 @@ import gleam/dynamic/decode
 import gleam/json.{type Json}
 import gleam/option.{type Option}
 
+/// Represents a line item in the AGS (Assignment Grading Service).
 pub type LineItem {
   LineItem(
     id: Option(String),
@@ -11,6 +12,7 @@ pub type LineItem {
   )
 }
 
+/// Converts a `LineItem` to a JSON representation.
 pub fn to_json(line_item: LineItem) -> Json {
   let LineItem(id, score_maximum, label, resource_id) = line_item
 
@@ -34,6 +36,7 @@ fn maybe_add(
   |> option.unwrap(list)
 }
 
+/// Decodes a JSON object into a `LineItem`.
 pub fn decoder() {
   use id <- decode.field("id", decode.optional(decode.string))
   use score_maximum <- decode.field("scoreMaximum", decode.float)

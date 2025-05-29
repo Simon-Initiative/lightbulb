@@ -1,3 +1,5 @@
+/// Represents an LTI registration including information about the
+/// platform such as the name, issuer, client ID, and service endpoints.
 pub type Registration {
   Registration(
     name: String,

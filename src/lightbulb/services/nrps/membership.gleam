@@ -1,5 +1,6 @@
 import gleam/dynamic/decode
 
+/// Represents a membership in the NRPS (Names and Roles Provisioning Service).
 pub type Membership {
   Membership(
     user_id: String,
@@ -13,6 +14,7 @@ pub type Membership {
   )
 }
 
+/// Converts a `Membership` to a JSON representation.
 pub fn decoder() {
   use user_id <- decode.field("user_id", decode.string)
   use status <- decode.field("status", decode.string)

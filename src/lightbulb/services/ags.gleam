@@ -25,6 +25,7 @@ pub const result_readonly_scope_url = "https://purl.imsglobal.org/spec/lti-ags/s
 
 pub const scores_scope_url = "https://purl.imsglobal.org/spec/lti-ags/scope/score"
 
+/// Posts a score to the AGS service for a given line item.
 pub fn post_score(
   http_provider: HttpProvider,
   score: Score,
@@ -62,6 +63,7 @@ pub fn post_score(
   }
 }
 
+/// Fetches an existing line item or creates a new one if it doesn't exist.
 pub fn fetch_or_create_line_item(
   http_provider: HttpProvider,
   line_items_service_url: String,
@@ -121,6 +123,7 @@ pub fn fetch_or_create_line_item(
   }
 }
 
+/// Creates a new line item.
 pub fn create_line_item(
   http_provider: HttpProvider,
   line_items_service_url: String,

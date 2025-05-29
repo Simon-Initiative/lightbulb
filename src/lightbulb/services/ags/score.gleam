@@ -1,5 +1,6 @@
 import gleam/json.{type Json}
 
+/// Represents a score in the AGS (Assignment Grading Service).
 pub type Score {
   Score(
     score_given: Float,
@@ -12,6 +13,7 @@ pub type Score {
   )
 }
 
+/// Converts a `Score` to a JSON representation.
 pub fn to_json(score: Score) -> Json {
   let Score(
     score_given,

@@ -18,6 +18,7 @@ import lightbulb/providers/http_provider.{type HttpProvider}
 import lightbulb/registration.{type Registration}
 import lightbulb/utils/logger
 
+/// Represents an OAuth2 access token for LTI 1.3 services.
 pub type AccessToken {
   AccessToken(token: String, token_type: String, expires_in: Int, scope: String)
 }
@@ -25,14 +26,14 @@ pub type AccessToken {
 /// Requests an OAuth2 access token. Returns Ok(AccessToken) on success, Error(_) otherwise.
 ///
 /// As parameters, expects:
-/// 1. The registration from which an access token is being requested
-/// 2. A list of scopes being requested
-/// 3. The host name of this instance of Torus
+/// 1. `providers`: A `Providers` instance that contains the HTTP provider and data provider.
+/// 2. `registration`: A `Registration` instance used to fetch the access token endpoint and client ID.
+/// 3. `scopes`: A list of scopes to request for the access token.
 ///
 /// Examples:
 ///
 /// ```gleam
-/// fetch_access_token(registration, scopes, host)
+/// fetch_access_token(providers, registration, ["https://purl.imsglobal.org/spec/lti-ags/scope/lineitem"])
 /// // Ok(AccessToken("actual_access_token", "Bearer", 3600, "https://purl.imsglobal.org/spec/lti-ags/scope/lineitem"))
 /// ```
 pub fn fetch_access_token(
@@ -127,7 +128,7 @@ fn decode_access_token(body: String) -> Result(AccessToken, String) {
   })
 }
 
-pub fn create_client_assertion(
+fn create_client_assertion(
   active_jwk: Jwk,
   auth_token_url: String,
   client_id: String,
@@ -175,6 +176,7 @@ fn audience(auth_token_url: String, auth_audience: Option(String)) -> String {
   }
 }
 
+/// Sets the Authorization header for a request using the provided access token.
 pub fn set_authorization_header(
   req: Request(String),
   access_token: AccessToken,

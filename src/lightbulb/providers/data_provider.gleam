@@ -3,6 +3,9 @@ import lightbulb/jwk.{type Jwk}
 import lightbulb/nonce.{type Nonce}
 import lightbulb/registration.{type Registration}
 
+/// Represents a data provider that can handle various operations related to
+/// LTI (Learning Tools Interoperability) such as creating nonces,
+/// validating nonces, retrieving registrations, deployments, and active JWKs.
 pub type DataProvider {
   DataProvider(
     create_nonce: fn() -> Result(Nonce, String),
