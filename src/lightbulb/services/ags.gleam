@@ -225,16 +225,21 @@ pub fn get_lti_ags_claim(
       None,
       decode.optional(decode.string),
     )
+
     use lineitems <- decode.optional_field(
       "lineitems",
       None,
       decode.optional(decode.string),
     )
+
     use scope <- decode.field("scope", decode.list(decode.string))
-    use errors <- decode.field(
+
+    use errors <- decode.optional_field(
       "errors",
+      dict.new(),
       decode.dict(decode.string, decode.dynamic),
     )
+
     use validation_context <- decode.optional_field(
       "validation_context",
       None,
