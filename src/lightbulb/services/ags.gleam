@@ -235,8 +235,9 @@ pub fn get_lti_ags_claim(
       "errors",
       decode.dict(decode.string, decode.dynamic),
     )
-    use validation_context <- decode.field(
+    use validation_context <- decode.optional_field(
       "validation_context",
+      None,
       decode.optional(decode.dynamic),
     )
 
