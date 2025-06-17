@@ -3,3 +3,4 @@
 /build
 erl_crash.dump
 src/lightbulb/.DS_Store
+.DS_Store

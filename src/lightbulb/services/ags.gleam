@@ -201,22 +201,35 @@ pub fn get_line_items_service_url(
   {
     use lti_ags_claim <- result.try(get_lti_ags_claim(lti_launch_claims))
 
-    Ok(lti_ags_claim.lineitems)
+    lti_ags_claim.lineitems
+    |> option.to_result("Missing line items URL in LTI AGS claim")
   }
 }
 
-type AgsClaim {
+pub type AgsClaim {
   AgsClaim(
-    lineitems: String,
+    lineitem: Option(String),
+    lineitems: Option(String),
     scope: List(String),
     errors: Dict(String, Dynamic),
     validation_context: Option(Dynamic),
   )
 }
 
-fn get_lti_ags_claim(claims: Dict(String, Dynamic)) -> Result(AgsClaim, String) {
+pub fn get_lti_ags_claim(
+  claims: Dict(String, Dynamic),
+) -> Result(AgsClaim, String) {
   let lti_ags_claim_decoder = {
-    use lineitems <- decode.field("lineitems", decode.string)
+    use lineitem <- decode.optional_field(
+      "lineitem",
+      None,
+      decode.optional(decode.string),
+    )
+    use lineitems <- decode.optional_field(
+      "lineitems",
+      None,
+      decode.optional(decode.string),
+    )
     use scope <- decode.field("scope", decode.list(decode.string))
     use errors <- decode.field(
       "errors",
@@ -228,6 +241,7 @@ fn get_lti_ags_claim(claims: Dict(String, Dynamic)) -> Result(AgsClaim, String) 
     )
 
     decode.success(AgsClaim(
+      lineitem: lineitem,
       lineitems: lineitems,
       scope: scope,
       errors: errors,
