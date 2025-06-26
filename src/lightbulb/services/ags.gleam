@@ -55,7 +55,7 @@ pub fn post_score(
   case http_provider.send(req) {
     Ok(res) ->
       case res.status {
-        200 | 201 -> Ok(res.body)
+        200 | 201 | 204 -> Ok(res.body)
         _ -> Error("Unexpected status: " <> string.inspect(res))
       }
 
