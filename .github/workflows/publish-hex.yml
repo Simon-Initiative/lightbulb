@@ -29,4 +29,4 @@ jobs:
           gleam build
           gleam publish -y
         env:
-          HEX_API_KEY: ${{ secrets.HEX_PM_PUBLISH_KEY }}
+          HEXPM_API_KEY: ${{ secrets.HEXPM_API_KEY }}
