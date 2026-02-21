@@ -12,11 +12,11 @@ import gleam/list
 import gleam/order.{Gt, Lt}
 import gleam/result
 import gleam/uri.{query_to_string}
-import ids/uuid
 import lightbulb/jose.{type Claims, JoseJws, JoseJwt}
 import lightbulb/providers/data_provider.{type DataProvider}
 import lightbulb/registration.{type Registration}
 import lightbulb/utils/logger
+import youid/uuid
 
 const deployment_id_claim = "https://purl.imsglobal.org/spec/lti/claim/deployment_id"
 
@@ -42,7 +42,7 @@ pub fn oidc_login(
   use registration <- result.try(validate_registration(provider, params))
   use client_id <- result.try(validate_client_id_exists(params))
 
-  let assert Ok(state) = uuid.generate_v4()
+  let state = uuid.v4_string()
   let assert Ok(nonce) = provider.create_nonce()
 
   let query_params = [

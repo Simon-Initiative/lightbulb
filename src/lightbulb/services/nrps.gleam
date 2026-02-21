@@ -121,7 +121,7 @@ fn get_nrps_claim(claims: Dict(String, Dynamic)) -> Result(NrpsClaim, String) {
 
   dict.get(claims, nrps_claim_url)
   |> result.replace_error("Missing LTI NRPS claim")
-  |> result.then(fn(c) {
+  |> result.try(fn(c) {
     decode.run(c, nrps_claim_decoder)
     |> result.replace_error("Invalid LTI NRPS claim")
   })

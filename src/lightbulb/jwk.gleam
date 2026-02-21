@@ -1,8 +1,8 @@
 import gleam/dict
 import gleam/dynamic/decode
 import gleam/result
-import ids/uuid
 import lightbulb/jose
+import youid/uuid
 
 pub type Jwk {
   Jwk(kid: String, typ: String, alg: String, pem: String)
@@ -39,7 +39,7 @@ pub fn from_map(kid: String, map: dict.Dict(String, String)) {
 }
 
 pub fn generate() {
-  use kid <- result.try(uuid.generate_v4())
+  let kid = uuid.v4_string()
 
   let #(_, jwk_map) = jose.generate_key(jose.Rsa(2048)) |> jose.to_map()
 

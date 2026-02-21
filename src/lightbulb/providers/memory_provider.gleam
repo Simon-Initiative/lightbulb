@@ -9,19 +9,18 @@
 import birl
 import birl/duration
 import gleam/erlang/process.{type Subject}
-import gleam/function.{identity}
 import gleam/list
 import gleam/order.{Lt}
-import gleam/otp/actor.{type StartError, Spec}
+import gleam/otp/actor.{type StartError}
 import gleam/pair
 import gleam/result
-import ids/uuid
 import lightbulb/deployment.{type Deployment}
 import lightbulb/jwk.{type Jwk}
 import lightbulb/nonce.{type Nonce, Nonce}
 import lightbulb/providers/data_provider.{type DataProvider, DataProvider}
 import lightbulb/providers/memory_provider/tables.{type Table}
 import lightbulb/registration.{type Registration}
+import youid/uuid
 
 const call_timeout = 5000
 
@@ -75,13 +74,13 @@ pub type Message {
   )
 }
 
-fn handle_message(message: Message, state: State) -> actor.Next(Message, State) {
+fn handle_message(state: State, message: Message) -> actor.Next(State, Message) {
   // The dispatch function is a safe way to send messages to the actor. Messages will be
   // processed in the order they are received after the current operation is completed.
   let State(dispatch, ..) = state
 
   case message {
-    Shutdown -> actor.Stop(process.Normal)
+    Shutdown -> actor.stop()
 
     GetActiveJwk(reply_with) -> {
       case state.jwks {
@@ -113,19 +112,11 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
     }
 
     CreateNonce(reply_with) -> {
-      let nonce_result = {
-        use nonce <- result.try(uuid.generate_v4() |> result.replace_error(Nil))
+      let nonce =
+        Nonce(uuid.v4_string(), birl.now() |> birl.add(duration.minutes(5)))
 
-        Ok(Nonce(nonce, birl.now() |> birl.add(duration.minutes(5))))
-      }
-
-      actor.send(reply_with, nonce_result)
-
-      case nonce_result {
-        Ok(nonce) ->
-          actor.continue(State(..state, nonces: [nonce, ..state.nonces]))
-        Error(_) -> actor.continue(state)
-      }
+      actor.send(reply_with, Ok(nonce))
+      actor.continue(State(..state, nonces: [nonce, ..state.nonces]))
     }
 
     ValidateNonce(value, reply_with) -> {
@@ -226,9 +217,7 @@ fn handle_message(message: Message, state: State) -> actor.Next(Message, State) 
 }
 
 pub fn start() -> Result(MemoryProvider, StartError) {
-  let init = fn() {
-    let self = process.new_subject()
-
+  let init = fn(self) {
     let state =
       State(
         dispatch: process.send(self, _),
@@ -239,14 +228,19 @@ pub fn start() -> Result(MemoryProvider, StartError) {
         deployments: tables.new(),
       )
 
-    let selector = process.selecting(process.new_selector(), self, identity)
+    let selector = process.new_selector() |> process.select(self)
 
-    actor.Ready(state, selector)
+    Ok(
+      actor.initialised(state)
+      |> actor.selecting(selector)
+      |> actor.returning(self),
+    )
   }
 
-  let call_timeout = 5000
-
-  actor.start_spec(Spec(init, call_timeout, handle_message))
+  actor.new_with_initialiser(call_timeout, init)
+  |> actor.on_message(handle_message)
+  |> actor.start
+  |> result.map(fn(started) { started.data })
 }
 
 pub fn cleanup(actor) {
@@ -283,11 +277,11 @@ pub fn data_provider(memory_provider) -> Result(DataProvider, String) {
 }
 
 pub fn get_active_jwk(actor) {
-  process.call(actor, GetActiveJwk, call_timeout)
+  process.call(actor, call_timeout, GetActiveJwk)
 }
 
 pub fn get_all_jwks(actor) {
-  process.call(actor, GetAllJwks, call_timeout)
+  process.call(actor, call_timeout, GetAllJwks)
 }
 
 pub fn create_jwk(actor, jwk) {
@@ -295,11 +289,11 @@ pub fn create_jwk(actor, jwk) {
 }
 
 pub fn create_nonce(actor) {
-  process.call(actor, CreateNonce, call_timeout)
+  process.call(actor, call_timeout, CreateNonce)
 }
 
 pub fn validate_nonce(actor, value) {
-  process.call(actor, ValidateNonce(value, _), call_timeout)
+  process.call(actor, call_timeout, ValidateNonce(value, _))
 }
 
 pub fn cleanup_expired_nonces(actor) {
@@ -307,19 +301,19 @@ pub fn cleanup_expired_nonces(actor) {
 }
 
 pub fn create_registration(actor, registration) {
-  process.call(actor, CreateRegistration(registration, _), call_timeout)
+  process.call(actor, call_timeout, CreateRegistration(registration, _))
 }
 
 pub fn list_registrations(actor) {
-  process.call(actor, GetAllRegistrations, call_timeout)
+  process.call(actor, call_timeout, GetAllRegistrations)
 }
 
 pub fn get_registration(actor, id) {
-  process.call(actor, GetRegistration(id, _), call_timeout)
+  process.call(actor, call_timeout, GetRegistration(id, _))
 }
 
 pub fn get_registration_by(actor, issuer, client_id) {
-  process.call(actor, GetRegistrationBy(issuer, client_id, _), call_timeout)
+  process.call(actor, call_timeout, GetRegistrationBy(issuer, client_id, _))
 }
 
 pub fn delete_registration(actor, id) {
@@ -329,13 +323,14 @@ pub fn delete_registration(actor, id) {
 }
 
 pub fn create_deployment(actor, deployment) {
-  process.call(actor, CreateDeployment(deployment, _), call_timeout)
+  process.call(actor, call_timeout, CreateDeployment(deployment, _))
 }
 
 pub fn get_deployment(actor, issuer, client_id, deployment_id) {
-  process.call(
-    actor,
-    GetDeployment(issuer, client_id, deployment_id, _),
-    call_timeout,
-  )
+  process.call(actor, call_timeout, GetDeployment(
+    issuer,
+    client_id,
+    deployment_id,
+    _,
+  ))
 }

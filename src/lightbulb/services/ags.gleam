@@ -192,7 +192,7 @@ pub fn grade_passback_available(
 
     Ok(list.contains(lti_ags_claim.scope, result_readonly_scope_url))
   }
-  |> result.unwrap_both()
+  |> result.unwrap(False)
 }
 
 pub fn get_line_items_service_url(
@@ -257,7 +257,7 @@ pub fn get_lti_ags_claim(
 
   dict.get(claims, lti_ags_claim_url)
   |> result.replace_error("Missing LTI AGS claim")
-  |> result.then(fn(c) {
+  |> result.try(fn(c) {
     decode.run(c, lti_ags_claim_decoder)
     |> result.replace_error("Invalid LTI AGS claim")
   })

@@ -10,7 +10,7 @@ import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string
 import gleam/uri
-import ids/uuid
+import youid/uuid
 import lightbulb/jose
 import lightbulb/jwk.{type Jwk}
 import lightbulb/providers.{type Providers}
@@ -137,7 +137,7 @@ fn create_client_assertion(
   // let #(_, jwk) = jose.generate_key(jose.Rsa(2048)) |> jose.to_map()
   let #(_, jwk) = active_jwk |> jwk.to_map()
 
-  let assert Ok(jti) = uuid.generate_v4()
+  let jti = uuid.v4_string()
 
   let jwt =
     dict.from_list([
