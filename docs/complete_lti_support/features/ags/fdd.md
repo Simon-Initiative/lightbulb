@@ -129,7 +129,7 @@ Add explicit helper predicates:
 - Container list APIs (`list_line_items`, `list_results`) return `Paged(a)` with parsed links.
 - If parsing fails, operation still returns items with empty links and logs parse warning.
 
-## 7. Error Model
+## 7. Error Taxonomy
 Keep public return type `Result(_, String)` for compatibility.
 Use deterministic prefixed error categories:
 - `ags.request.invalid_url`

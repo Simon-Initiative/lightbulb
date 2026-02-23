@@ -79,6 +79,12 @@
 - [ ] Document compatibility behavior for existing functions (`create_line_item`, `fetch_or_create_line_item`, `post_score`).
 - [ ] Add upgrade notes for new return types (if paged responses are additive/new functions).
 
+## Cross-Feature Dependencies
+- `core`: AGS claim extraction and launch validation prerequisites come from core launch handling.
+- `oauth_provider`: AGS scope request and token acquisition behavior depends on OAuth/client-assertion correctness.
+- `nrps`: shared Link-header parsing utility should be compatible with NRPS paging/differences handling.
+- `certification`: AGS objective mappings (`5.4.x`) and evidence links must be maintained in conformance artifacts.
+
 ## File-Level Execution
 - `src/lightbulb/services/ags.gleam`
 - `src/lightbulb/services/ags/line_item.gleam`
