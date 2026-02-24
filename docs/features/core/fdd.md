@@ -31,8 +31,8 @@ Gaps vs Core + certification readiness:
 
 ### 3.1 Public API Stability
 Preserve existing public entry points:
-- `lightbulb.oidc_login(provider, params)`
-- `lightbulb.validate_launch(provider, params, session_state)`
+- `lightbulb/tool.oidc_login(provider, params)`
+- `lightbulb/tool.validate_launch(provider, params, session_state)`
 
 Additive extensions only where needed for context persistence and stricter validation.
 

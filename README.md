@@ -26,7 +26,8 @@ import gleam/http/response
 import gleam/list
 import gleam/option.{Some}
 import gleam/string
-import lightbulb.{type DataProvider}
+import lightbulb/providers/data_provider.{type DataProvider}
+import lightbulb/tool
 import wisp.{type Request, type Response, redirect}
 
 pub fn oidc_login(req: Request, data_provider: DataProvider) -> Response {
@@ -34,7 +35,7 @@ pub fn oidc_login(req: Request, data_provider: DataProvider) -> Response {
   use params <- all_params(req)
 
   // Build the OIDC login state and URL response.
-  case lightbulb.oidc_login(data_provider, params) {
+  case tool.oidc_login(data_provider, params) {
     Ok(#(state, redirect_url)) -> {
       use <- set_cookie(
         "state",
@@ -65,7 +66,7 @@ pub fn validate_launch(req: Request, data_provider: DataProvider) -> Response {
   })
 
   // Validate the launch request using the parameters and state.
-  case lightbulb.validate_launch(data_provider, params, state) {
+  case tool.validate_launch(data_provider, params, state) {
     Ok(claims) -> {
       wisp.ok()
       |> wisp.string_body("Launch successful! " <> string.inspect(claims))
@@ -133,35 +134,56 @@ Deep-link launches can be decoded from validated launch claims, then answered wi
 signed Deep Linking response JWT and form-post payload.
 
 ```gleam
+import gleam/http/response
 import gleam/option
+import gleam/result
 import lightbulb/deep_linking
 import lightbulb/deep_linking/content_item
+import wisp.{type Request, type Response}
 
-let assert Ok(settings) = deep_linking.get_deep_linking_settings(claims)
+pub fn deep_linking_response(
+  _req: Request,
+  data_provider,
+  claims,
+) -> Response {
+  case build_deep_linking_response_html(data_provider, claims) {
+    Ok(html) ->
+      wisp.ok()
+      |> response.set_header("content-type", "text/html; charset=utf-8")
+      |> wisp.string_body(html)
 
-let items = [
-  content_item.lti_resource_link(
-    url: option.Some("https://tool.example.com/launch/resource-1"),
-    title: option.Some("Resource 1"),
-    text: option.None,
-    custom: option.None,
-    line_item: option.None,
-  ),
-]
+    Error(error) ->
+      wisp.bad_request()
+      |> wisp.string_body("Deep linking response failed: " <> error)
+  }
+}
 
-let assert Ok(active_jwk) = data_provider.get_active_jwk()
+fn build_deep_linking_response_html(data_provider, claims) {
+  use settings <- result.try(deep_linking.get_deep_linking_settings(claims))
+  use active_jwk <- result.try(data_provider.get_active_jwk())
 
-let assert Ok(jwt) =
-  deep_linking.build_response_jwt(
-    request_claims: claims,
-    settings: settings,
-    items: items,
-    options: deep_linking.default_response_options(),
-    active_jwk: active_jwk,
+  let items = [
+    content_item.lti_resource_link(
+      option.Some("https://tool.example.com/launch/resource-1"),
+      option.Some("Resource 1"),
+      option.None,
+      option.None,
+      option.None,
+    ),
+  ]
+
+  use jwt <- result.try(
+    deep_linking.build_response_jwt(
+      request_claims: claims,
+      settings: settings,
+      items: items,
+      options: deep_linking.default_response_options(),
+      active_jwk: active_jwk,
+    ),
   )
 
-let assert Ok(html) =
   deep_linking.build_response_form_post(settings.deep_link_return_url, jwt)
+}
 ```
 
 ## Development

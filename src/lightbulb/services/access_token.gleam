@@ -10,13 +10,13 @@ import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string
 import gleam/uri
-import youid/uuid
 import lightbulb/jose
 import lightbulb/jwk.{type Jwk}
 import lightbulb/providers.{type Providers}
 import lightbulb/providers/http_provider.{type HttpProvider}
 import lightbulb/registration.{type Registration}
 import lightbulb/utils/logger
+import youid/uuid
 
 /// Represents an OAuth2 access token for LTI 1.3 services.
 pub type AccessToken {
