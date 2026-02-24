@@ -12,6 +12,8 @@ import gleam/list
 import gleam/order.{Gt, Lt}
 import gleam/result
 import gleam/uri.{query_to_string}
+import lightbulb/deep_linking
+import lightbulb/deep_linking/settings
 import lightbulb/jose.{type Claims, JoseJws, JoseJwt}
 import lightbulb/providers/data_provider.{type DataProvider}
 import lightbulb/registration.{type Registration}
@@ -137,7 +139,7 @@ pub fn validate_launch(
   ))
   use _claims <- result.try(validate_timestamps(claims))
   use _claims <- result.try(validate_nonce(claims, provider))
-  use _claims <- result.try(validate_message(claims))
+  use _claims <- result.try(validate_message_type(claims))
 
   Ok(claims)
 }
@@ -331,11 +333,37 @@ fn validate_lti_resource_link_request_message(
   }
 }
 
+fn validate_lti_deep_linking_request_message(
+  claims: Claims,
+) -> Result(Dict(String, Dynamic), String) {
+  case get_claim(claims, message_type_claim, decode.string) {
+    Ok(message_type)
+      if message_type == deep_linking.lti_message_type_deep_linking_request
+    -> {
+      settings.from_claims(claims)
+      |> result.map(fn(_) { claims })
+      |> result.replace_error("Invalid deep linking settings")
+    }
+
+    _ -> {
+      logger.error_meta("Invalid message type", #(claims, message_type_claim))
+
+      Error("Invalid message type")
+    }
+  }
+}
+
 const message_validators = [
   #("LtiResourceLinkRequest", validate_lti_resource_link_request_message),
+  #(
+    deep_linking.lti_message_type_deep_linking_request,
+    validate_lti_deep_linking_request_message,
+  ),
 ]
 
-fn validate_message(claims: Claims) {
+/// Validates the LTI launch message type and dispatches to the corresponding
+/// message-specific validator.
+pub fn validate_message_type(claims: Claims) {
   use message_type <- result.try(get_claim(
     claims,
     message_type_claim,

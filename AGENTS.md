@@ -1,0 +1,52 @@
+# AGENTS
+
+## Project Scope
+- This file defines local agent guidance for the `lightbulb` repository.
+
+## Project Overview
+- `lightbulb` is a Gleam library for building LTI 1.3 tools.
+- Core responsibilities include OIDC login, launch validation, and LTI service integrations.
+- Current service coverage includes AGS (Assignments and Grades), NRPS (Names and Roles), and Deep Linking.
+- Provider interfaces are designed to keep storage and HTTP concerns pluggable.
+
+## Architecture
+- Entry module:
+  - `src/lightbulb.gleam` re-exports primary APIs for consumers.
+- Launch/auth core:
+  - `src/lightbulb/tool.gleam` handles OIDC login, JWT verification, claim validation, and message-type routing.
+- Feature modules:
+  - `src/lightbulb/services/access_token.gleam` builds OAuth client assertions and fetches service tokens.
+  - `src/lightbulb/services/ags*.gleam` implements AGS line item and score workflows.
+  - `src/lightbulb/services/nrps*.gleam` implements membership retrieval.
+  - `src/lightbulb/deep_linking*.gleam` handles deep-link settings, content items, response JWT, and form-post helper.
+- Provider boundary:
+  - `src/lightbulb/providers/data_provider.gleam` defines persistence/key/registration interfaces.
+  - `src/lightbulb/providers/http_provider.gleam` abstracts HTTP transport.
+  - `src/lightbulb/providers/memory_provider.gleam` offers in-memory development/testing storage.
+- Crypto/key utilities:
+  - `src/lightbulb/jose.gleam` and `src/lightbulb/jwk.gleam` wrap JOSE/JWK operations.
+- Tests:
+  - `test/lightbulb/**` contains unit and integration-style tests grouped by domain.
+
+## Engineering Workflow
+- Keep changes minimal and scoped to the feature/bug request.
+- Prefer additive changes over broad refactors unless refactoring is required for correctness.
+- Run focused tests first, then broader tests when behavior changes cross module boundaries.
+- Prefer explicit `Result` error paths over exceptions or panics.
+
+## Gleam Conventions
+- Prefer explicit, typed decoding and deterministic error strings for public APIs.
+- Reuse existing modules and patterns before introducing new helpers.
+- For boolean early-return checks, prefer `gleam/bool.guard`.
+- Prefer returning `Result(_, String)` (or similarly explicit error types) rather than raising exceptions.
+
+Preferred pattern:
+
+```gleam
+use <- bool.guard(
+  when: some_condition,
+  return: Error("some.error.code"),
+)
+```
+
+- Avoid creating custom `bool_guard` wrappers when `bool.guard` is sufficient.

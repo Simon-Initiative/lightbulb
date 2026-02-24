@@ -127,6 +127,43 @@ fn get_cookie(req: Request, name name: String) -> Result(String, Nil) {
 
 Further documentation can be found at <https://hexdocs.pm/lightbulb>.
 
+### Deep Linking
+
+Deep-link launches can be decoded from validated launch claims, then answered with a
+signed Deep Linking response JWT and form-post payload.
+
+```gleam
+import gleam/option
+import lightbulb/deep_linking
+import lightbulb/deep_linking/content_item
+
+let assert Ok(settings) = deep_linking.get_deep_linking_settings(claims)
+
+let items = [
+  content_item.lti_resource_link(
+    url: option.Some("https://tool.example.com/launch/resource-1"),
+    title: option.Some("Resource 1"),
+    text: option.None,
+    custom: option.None,
+    line_item: option.None,
+  ),
+]
+
+let assert Ok(active_jwk) = data_provider.get_active_jwk()
+
+let assert Ok(jwt) =
+  deep_linking.build_response_jwt(
+    request_claims: claims,
+    settings: settings,
+    items: items,
+    options: deep_linking.default_response_options(),
+    active_jwk: active_jwk,
+  )
+
+let assert Ok(html) =
+  deep_linking.build_response_form_post(settings.deep_link_return_url, jwt)
+```
+
 ## Development
 
 ```sh
