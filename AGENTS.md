@@ -1,15 +1,18 @@
 # AGENTS
 
 ## Project Scope
+
 - This file defines local agent guidance for the `lightbulb` repository.
 
 ## Project Overview
+
 - `lightbulb` is a Gleam library for building LTI 1.3 tools.
 - Core responsibilities include OIDC login, launch validation, and LTI service integrations.
 - Current service coverage includes AGS (Assignments and Grades), NRPS (Names and Roles), and Deep Linking.
 - Provider interfaces are designed to keep storage and HTTP concerns pluggable.
 
 ## Architecture
+
 - Entry module:
   - `src/lightbulb.gleam` re-exports primary APIs for consumers.
 - Launch/auth core:
@@ -29,12 +32,15 @@
   - `test/lightbulb/**` contains unit and integration-style tests grouped by domain.
 
 ## Engineering Workflow
+
 - Keep changes minimal and scoped to the feature/bug request.
 - Prefer additive changes over broad refactors unless refactoring is required for correctness.
 - Run focused tests first, then broader tests when behavior changes cross module boundaries.
 - Prefer explicit `Result` error paths over exceptions or panics.
+- When working from a feature `plan.md`, check off checklist items when tasks are completed.
 
 ## Gleam Conventions
+
 - Prefer explicit, typed decoding and deterministic error strings for public APIs.
 - Reuse existing modules and patterns before introducing new helpers.
 - For boolean early-return checks, prefer `gleam/bool.guard`.
