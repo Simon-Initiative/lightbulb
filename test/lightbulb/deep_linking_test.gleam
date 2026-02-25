@@ -146,6 +146,88 @@ pub fn build_response_jwt_rejects_invalid_item_type_test() {
   |> should.equal(Error("deep_linking.response.invalid_item_type"))
 }
 
+pub fn validate_items_accepts_allowed_type_and_count_test() {
+  let settings =
+    DeepLinkingSettings(
+      deep_link_return_url: "https://platform.example.com/deep_link_return",
+      accept_types: ["link"],
+      accept_presentation_document_targets: ["iframe"],
+      accept_media_types: option.None,
+      accept_multiple: option.Some(False),
+      auto_create: option.None,
+      title: option.None,
+      text: option.None,
+      data: option.None,
+      accept_lineitem: option.None,
+    )
+
+  content_item.validate_items(
+    settings,
+    [content_item.link("https://example.com/resource-1", option.None, option.None)],
+  )
+  |> should.equal(Ok(Nil))
+}
+
+pub fn validate_items_rejects_multiple_when_not_allowed_test() {
+  let settings =
+    DeepLinkingSettings(
+      deep_link_return_url: "https://platform.example.com/deep_link_return",
+      accept_types: ["link"],
+      accept_presentation_document_targets: ["iframe"],
+      accept_media_types: option.None,
+      accept_multiple: option.Some(False),
+      auto_create: option.None,
+      title: option.None,
+      text: option.None,
+      data: option.None,
+      accept_lineitem: option.None,
+    )
+
+  content_item.validate_items(
+    settings,
+    [
+      content_item.link("https://example.com/resource-1", option.None, option.None),
+      content_item.link("https://example.com/resource-2", option.None, option.None),
+    ],
+  )
+  |> should.equal(Error("deep_linking.response.multiple_not_allowed"))
+}
+
+pub fn validate_items_rejects_line_item_when_not_allowed_test() {
+  let settings =
+    DeepLinkingSettings(
+      deep_link_return_url: "https://platform.example.com/deep_link_return",
+      accept_types: ["ltiResourceLink"],
+      accept_presentation_document_targets: ["iframe"],
+      accept_media_types: option.None,
+      accept_multiple: option.Some(True),
+      auto_create: option.None,
+      title: option.None,
+      text: option.None,
+      data: option.None,
+      accept_lineitem: option.Some(False),
+    )
+
+  let items = [
+    content_item.lti_resource_link(
+      option.Some("https://tool.example.com/launch/resource-1"),
+      option.Some("Resource 1"),
+      option.None,
+      option.None,
+      option.Some(content_item.LineItem(
+        score_maximum: 10.0,
+        resource_id: option.Some("resource-1"),
+        tag: option.None,
+        label: option.Some("Grade"),
+        grades_released: option.None,
+      )),
+    ),
+  ]
+
+  content_item.validate_items(settings, items)
+  |> should.equal(Error("deep_linking.response.invalid_item_type"))
+}
+
 pub fn build_response_form_post_test() {
   let assert Ok(html) =
     deep_linking.build_response_form_post(
@@ -162,6 +244,52 @@ pub fn build_response_form_post_test() {
   string.contains(
     html,
     "action=\"https://platform.example.com/deep_link_return\"",
+  )
+  |> should.be_true()
+}
+
+pub fn build_response_form_post_contract_test() {
+  let assert Ok(html) =
+    deep_linking.build_response_form_post(
+      "https://platform.example.com/deep_link_return",
+      "header.payload.signature",
+    )
+
+  string.contains(
+    html,
+    "<form id=\"deep-linking-form\" action=\"https://platform.example.com/deep_link_return\" method=\"POST\">",
+  )
+  |> should.be_true()
+
+  string.contains(
+    html,
+    "<input type=\"hidden\" name=\"JWT\" value=\"header.payload.signature\"/>",
+  )
+  |> should.be_true()
+
+  string.contains(
+    html,
+    "<script>document.getElementById('deep-linking-form').submit();</script>",
+  )
+  |> should.be_true()
+}
+
+pub fn build_response_form_post_escapes_action_and_jwt_test() {
+  let assert Ok(html) =
+    deep_linking.build_response_form_post(
+      "https://platform.example.com/deep_link_return?x=1&y=2",
+      "abc<def>&\"ghi\"",
+    )
+
+  string.contains(
+    html,
+    "action=\"https://platform.example.com/deep_link_return?x=1&amp;y=2\"",
+  )
+  |> should.be_true()
+
+  string.contains(
+    html,
+    "value=\"abc&lt;def&gt;&amp;&quot;ghi&quot;\"",
   )
   |> should.be_true()
 }
