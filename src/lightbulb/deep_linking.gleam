@@ -10,6 +10,13 @@ import gleam/string
 import gleam/uri
 import lightbulb/deep_linking/content_item.{type ContentItem}
 import lightbulb/deep_linking/settings.{type DeepLinkingSettings}
+import lightbulb/errors.{
+  type DeepLinkingError,
+  DeepLinkingClaimInvalid,
+  DeepLinkingClaimMissing,
+  DeepLinkingResponseInvalidReturnUrl,
+  DeepLinkingResponseSigningFailed,
+}
 import lightbulb/jose
 import lightbulb/jwk.{type Jwk}
 
@@ -66,11 +73,11 @@ pub fn default_response_options() -> DeepLinkingResponseOptions {
 ///
 /// Returns:
 /// - `Ok(DeepLinkingSettings)` when the claim is present and valid
-/// - `Error("deep_linking.claim.missing")` when the settings claim is absent
-/// - `Error("deep_linking.settings.invalid")` when the claim shape is invalid
+/// - `Error(DeepLinkingClaimMissing)` when the settings claim is absent
+/// - `Error(DeepLinkingSettingsInvalid)` when the claim shape is invalid
 pub fn get_deep_linking_settings(
   claims: jose.Claims,
-) -> Result(DeepLinkingSettings, String) {
+) -> Result(DeepLinkingSettings, DeepLinkingError) {
   settings.from_claims(claims)
 }
 
@@ -85,7 +92,7 @@ pub fn build_response_jwt(
   items: List(ContentItem),
   options: DeepLinkingResponseOptions,
   active_jwk: Jwk,
-) -> Result(String, String) {
+) -> Result(String, DeepLinkingError) {
   use _ <- result.try(validate_return_url(settings.deep_link_return_url))
   use _ <- result.try(content_item.validate_items(settings, items))
   use iss <- result.try(required_claim_string(request_claims, "iss"))
@@ -139,7 +146,7 @@ pub fn build_response_jwt(
 pub fn build_response_form_post(
   deep_link_return_url: String,
   jwt: String,
-) -> Result(String, String) {
+) -> Result(String, DeepLinkingError) {
   use _ <- result.try(validate_return_url(deep_link_return_url))
 
   Ok(
@@ -156,22 +163,22 @@ pub fn build_response_form_post(
   )
 }
 
-fn validate_return_url(url: String) -> Result(Nil, String) {
+fn validate_return_url(url: String) -> Result(Nil, DeepLinkingError) {
   case uri.parse(url) {
     Ok(parsed) -> {
       case parsed.scheme {
         option.Some("http") | option.Some("https") -> Ok(Nil)
-        _ -> Error("deep_linking.response.invalid_return_url")
+        _ -> Error(DeepLinkingResponseInvalidReturnUrl)
       }
     }
-    Error(_) -> Error("deep_linking.response.invalid_return_url")
+    Error(_) -> Error(DeepLinkingResponseInvalidReturnUrl)
   }
 }
 
 fn sign_claims(
   claims: dict.Dict(String, dynamic.Dynamic),
   active_jwk: Jwk,
-) -> Result(String, String) {
+) -> Result(String, DeepLinkingError) {
   let #(_, jwk_map) = jwk.to_map(active_jwk)
   let jws =
     dict.from_list([
@@ -184,7 +191,7 @@ fn sign_claims(
   let #(_, compact_signed) = jose.compact(jose_jwt)
 
   case string.is_empty(compact_signed) {
-    True -> Error("deep_linking.response.signing_failed")
+    True -> Error(DeepLinkingResponseSigningFailed)
     False -> Ok(compact_signed)
   }
 }
@@ -192,12 +199,12 @@ fn sign_claims(
 fn required_claim_string(
   claims: jose.Claims,
   claim_name: String,
-) -> Result(String, String) {
+) -> Result(String, DeepLinkingError) {
   dict.get(claims, claim_name)
-  |> result.map_error(fn(_) { "deep_linking.claim.missing" })
+  |> result.map_error(fn(_) { DeepLinkingClaimMissing })
   |> result.try(fn(raw) {
     decode.run(raw, decode.string)
-    |> result.map_error(fn(_) { "deep_linking.claim.invalid" })
+    |> result.map_error(fn(_) { DeepLinkingClaimInvalid })
   })
 }
 

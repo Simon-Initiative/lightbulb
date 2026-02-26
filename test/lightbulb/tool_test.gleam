@@ -3,6 +3,7 @@ import gleam/dynamic
 import gleeunit/should
 import lightbulb/deep_linking
 import lightbulb/deep_linking/settings
+import lightbulb/errors
 import lightbulb/tool
 
 pub fn validate_message_type_deep_linking_request_test() {
@@ -29,7 +30,7 @@ pub fn validate_message_type_deep_linking_request_missing_settings_test() {
     ])
 
   tool.validate_message_type(claims)
-  |> should.equal(Error("core.jwt.invalid_claim"))
+  |> should.equal(Error(errors.JwtInvalidClaim))
 }
 
 fn deep_link_settings_claim() -> dynamic.Dynamic {

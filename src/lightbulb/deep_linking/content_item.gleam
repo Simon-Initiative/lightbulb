@@ -4,6 +4,11 @@ import gleam/dynamic
 import gleam/list
 import gleam/option.{type Option}
 import lightbulb/deep_linking/settings.{type DeepLinkingSettings}
+import lightbulb/errors.{
+  type DeepLinkingError,
+  DeepLinkingResponseInvalidItemType,
+  DeepLinkingResponseMultipleNotAllowed,
+}
 
 pub type LineItem {
   LineItem(
@@ -76,22 +81,22 @@ pub fn item_type(item: ContentItem) -> String {
 pub fn validate_items(
   settings: DeepLinkingSettings,
   items: List(ContentItem),
-) -> Result(Nil, String) {
+) -> Result(Nil, DeepLinkingError) {
   use <- bool.guard(
     when: !all_item_types_allowed(items, settings.accept_types),
-    return: Error("deep_linking.response.invalid_item_type"),
+    return: Error(DeepLinkingResponseInvalidItemType),
   )
 
   use <- bool.guard(
     when: option.unwrap(settings.accept_multiple, False) == False
       && list.length(items) > 1,
-    return: Error("deep_linking.response.multiple_not_allowed"),
+    return: Error(DeepLinkingResponseMultipleNotAllowed),
   )
 
   use <- bool.guard(
     when: option.unwrap(settings.accept_lineitem, False) == False
       && list.any(items, fn(item) { item_has_line_item(item) }),
-    return: Error("deep_linking.response.invalid_item_type"),
+    return: Error(DeepLinkingResponseInvalidItemType),
   )
 
   Ok(Nil)

@@ -120,22 +120,13 @@ Support:
 - Deep linking message validation/claim details are handled by `deep_linking` feature; core should still distinguish supported/unsupported message types and return deterministic errors.
 
 ## 8. Error Taxonomy
-Keep `Result(_, String)` for API compatibility, but standardize error categories:
-- `core.login.missing_param`
-- `core.launch.missing_param`
-- `core.jwt.invalid_signature`
-- `core.jwt.invalid_claim`
-- `core.jwt.expired`
-- `core.jwt.not_yet_valid`
-- `core.audience.invalid`
-- `core.registration.not_found`
-- `core.deployment.not_found`
-- `core.state.invalid`
-- `core.state.not_found`
-- `core.target_link_uri.mismatch`
-- `core.nonce.invalid`
-- `core.nonce.expired`
-- `core.message_type.unsupported`
+Use structured error types for API compatibility and testability:
+- `lightbulb/errors.CoreError`
+- `lightbulb/errors.NonceError`
+
+String compatibility should be provided via conversion helpers:
+- `lightbulb/errors.core_error_to_string`
+- `lightbulb/errors.nonce_error_to_string`
 
 ## 9. Runtime Flows
 

@@ -3,6 +3,10 @@ import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/option.{type Option, None}
 import gleam/result
+import lightbulb/errors.{
+  DeepLinkingClaimMissing,
+  DeepLinkingSettingsInvalid,
+}
 
 pub const claim_deep_linking_settings = "https://purl.imsglobal.org/spec/lti-dl/claim/deep_linking_settings"
 
@@ -85,13 +89,13 @@ pub fn decoder() {
 /// Extracts and decodes deep-linking settings from launch claims.
 ///
 /// Returns:
-/// - `Error("deep_linking.claim.missing")` when settings claim is absent
-/// - `Error("deep_linking.settings.invalid")` when claim fails decode/validation
+/// - `Error(DeepLinkingClaimMissing)` when settings claim is absent
+/// - `Error(DeepLinkingSettingsInvalid)` when claim fails decode/validation
 pub fn from_claims(claims: dict.Dict(String, Dynamic)) {
   dict.get(claims, claim_deep_linking_settings)
-  |> result.map_error(fn(_) { "deep_linking.claim.missing" })
+  |> result.map_error(fn(_) { DeepLinkingClaimMissing })
   |> result.try(fn(raw) {
     decode.run(raw, decoder())
-    |> result.map_error(fn(_) { "deep_linking.settings.invalid" })
+    |> result.map_error(fn(_) { DeepLinkingSettingsInvalid })
   })
 }

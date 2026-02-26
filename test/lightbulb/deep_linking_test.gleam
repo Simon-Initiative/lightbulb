@@ -8,6 +8,7 @@ import gleeunit/should
 import lightbulb/deep_linking
 import lightbulb/deep_linking/content_item
 import lightbulb/deep_linking/settings.{DeepLinkingSettings}
+import lightbulb/errors
 import lightbulb/jose
 import lightbulb/jwk
 
@@ -31,7 +32,7 @@ pub fn get_deep_linking_settings_test() {
 
 pub fn get_deep_linking_settings_missing_claim_test() {
   deep_linking.get_deep_linking_settings(dict.new())
-  |> should.equal(Error("deep_linking.claim.missing"))
+  |> should.equal(Error(errors.DeepLinkingClaimMissing))
 }
 
 pub fn build_response_jwt_test() {
@@ -143,7 +144,7 @@ pub fn build_response_jwt_rejects_invalid_item_type_test() {
     )
 
   result
-  |> should.equal(Error("deep_linking.response.invalid_item_type"))
+  |> should.equal(Error(errors.DeepLinkingResponseInvalidItemType))
 }
 
 pub fn validate_items_accepts_allowed_type_and_count_test() {
@@ -190,7 +191,7 @@ pub fn validate_items_rejects_multiple_when_not_allowed_test() {
       content_item.link("https://example.com/resource-2", option.None, option.None),
     ],
   )
-  |> should.equal(Error("deep_linking.response.multiple_not_allowed"))
+  |> should.equal(Error(errors.DeepLinkingResponseMultipleNotAllowed))
 }
 
 pub fn validate_items_rejects_line_item_when_not_allowed_test() {
@@ -225,7 +226,7 @@ pub fn validate_items_rejects_line_item_when_not_allowed_test() {
   ]
 
   content_item.validate_items(settings, items)
-  |> should.equal(Error("deep_linking.response.invalid_item_type"))
+  |> should.equal(Error(errors.DeepLinkingResponseInvalidItemType))
 }
 
 pub fn build_response_form_post_test() {
@@ -296,7 +297,12 @@ pub fn build_response_form_post_escapes_action_and_jwt_test() {
 
 pub fn build_response_form_post_invalid_url_test() {
   deep_linking.build_response_form_post("not-a-url", "jwt")
-  |> should.equal(Error("deep_linking.response.invalid_return_url"))
+  |> should.equal(Error(errors.DeepLinkingResponseInvalidReturnUrl))
+}
+
+pub fn deep_linking_error_to_string_conversion_test() {
+  errors.deep_linking_error_to_string(errors.DeepLinkingClaimMissing)
+  |> should.equal("Missing required deep-linking claim.")
 }
 
 fn decode_claim_string(claims, key: String) -> Result(String, String) {

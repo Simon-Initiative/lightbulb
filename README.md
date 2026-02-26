@@ -26,6 +26,7 @@ import gleam/http/response
 import gleam/list
 import gleam/option.{Some}
 import gleam/string
+import lightbulb/errors
 import lightbulb/providers/data_provider.{type DataProvider}
 import lightbulb/tool
 import wisp.{type Request, type Response, redirect}
@@ -51,7 +52,9 @@ pub fn oidc_login(req: Request, data_provider: DataProvider) -> Response {
     }
     Error(error) ->
       wisp.internal_server_error()
-      |> wisp.string_body("OIDC login failed: " <> error)
+      |> wisp.string_body(
+        "OIDC login failed: " <> errors.core_error_to_string(error),
+      )
   }
 }
 
@@ -73,7 +76,9 @@ pub fn validate_launch(req: Request, data_provider: DataProvider) -> Response {
     }
     Error(e) -> {
       wisp.bad_request()
-      |> wisp.string_body("Invalid launch: " <> string.inspect(e))
+      |> wisp.string_body(
+        "Invalid launch: " <> errors.core_error_to_string(e),
+      )
     }
   }
 }
@@ -141,6 +146,7 @@ import gleam/option
 import gleam/result
 import lightbulb/deep_linking
 import lightbulb/deep_linking/content_item
+import lightbulb/errors
 import wisp.{type Request, type Response}
 
 pub fn deep_linking_response(
@@ -156,7 +162,10 @@ pub fn deep_linking_response(
 
     Error(error) ->
       wisp.bad_request()
-      |> wisp.string_body("Deep linking response failed: " <> error)
+      |> wisp.string_body(
+        "Deep linking response failed: "
+        <> errors.deep_linking_error_to_string(error),
+      )
   }
 }
 

@@ -8,6 +8,7 @@ import gleam/string
 import gleam/uri
 import gleeunit/should
 import lightbulb/deployment
+import lightbulb/errors
 import lightbulb/jose
 import lightbulb/nonce
 import lightbulb/providers/data_provider.{type DataProvider, LoginContext}
@@ -44,6 +45,14 @@ pub fn successful_resource_link_launch_test() {
   memory_provider.cleanup(fixture.memory)
 }
 
+pub fn structured_error_to_string_conversion_test() {
+  errors.core_error_to_string(errors.NonceValidationError(errors.NonceExpired))
+  |> should.equal("Nonce has expired.")
+
+  errors.core_error_to_string(errors.LaunchMissingParam("state"))
+  |> should.equal("Missing required launch parameter: state.")
+}
+
 pub fn missing_required_claim_failure_test() {
   let fixture = setup_fixture(option.None)
 
@@ -59,7 +68,7 @@ pub fn missing_required_claim_failure_test() {
     dict.from_list([#("id_token", id_token), #("state", fixture.state)]),
     fixture.state,
   )
-  |> should.equal(Error("core.jwt.invalid_claim"))
+  |> should.equal(Error(errors.JwtInvalidClaim))
 
   memory_provider.cleanup(fixture.memory)
 }
@@ -80,7 +89,7 @@ pub fn invalid_version_failure_test() {
     dict.from_list([#("id_token", id_token), #("state", fixture.state)]),
     fixture.state,
   )
-  |> should.equal(Error("core.jwt.invalid_claim"))
+  |> should.equal(Error(errors.JwtInvalidClaim))
 
   memory_provider.cleanup(fixture.memory)
 }
@@ -101,7 +110,7 @@ pub fn unsupported_message_type_failure_test() {
     dict.from_list([#("id_token", id_token), #("state", fixture.state)]),
     fixture.state,
   )
-  |> should.equal(Error("core.message_type.unsupported"))
+  |> should.equal(Error(errors.MessageTypeUnsupported))
 
   memory_provider.cleanup(fixture.memory)
 }
@@ -164,7 +173,7 @@ pub fn audience_multi_without_azp_failure_test() {
     dict.from_list([#("id_token", id_token), #("state", fixture.state)]),
     fixture.state,
   )
-  |> should.equal(Error("core.audience.invalid"))
+  |> should.equal(Error(errors.AudienceInvalid))
 
   memory_provider.cleanup(fixture.memory)
 }
@@ -189,7 +198,7 @@ pub fn audience_azp_not_in_aud_failure_test() {
     dict.from_list([#("id_token", id_token), #("state", fixture.state)]),
     fixture.state,
   )
-  |> should.equal(Error("core.audience.invalid"))
+  |> should.equal(Error(errors.AudienceInvalid))
 
   memory_provider.cleanup(fixture.memory)
 }
@@ -210,7 +219,7 @@ pub fn deployment_mismatch_failure_test() {
     dict.from_list([#("id_token", id_token), #("state", fixture.state)]),
     fixture.state,
   )
-  |> should.equal(Error("core.deployment.not_found"))
+  |> should.equal(Error(errors.DeploymentNotFound))
 
   memory_provider.cleanup(fixture.memory)
 }
@@ -225,7 +234,7 @@ pub fn state_mismatch_failure_test() {
     dict.from_list([#("id_token", id_token), #("state", fixture.state)]),
     "different-session-state",
   )
-  |> should.equal(Error("core.state.invalid"))
+  |> should.equal(Error(errors.StateInvalid))
 
   memory_provider.cleanup(fixture.memory)
 }
@@ -242,7 +251,7 @@ pub fn missing_state_context_failure_test() {
     dict.from_list([#("id_token", id_token), #("state", fixture.state)]),
     fixture.state,
   )
-  |> should.equal(Error("core.state.not_found"))
+  |> should.equal(Error(errors.StateNotFound))
 
   memory_provider.cleanup(fixture.memory)
 }
@@ -267,7 +276,7 @@ pub fn expired_state_context_failure_test() {
     dict.from_list([#("id_token", id_token), #("state", fixture.state)]),
     fixture.state,
   )
-  |> should.equal(Error("core.state.not_found"))
+  |> should.equal(Error(errors.StateNotFound))
 
   memory_provider.cleanup(fixture.memory)
 }
@@ -288,7 +297,7 @@ pub fn target_link_uri_mismatch_failure_test() {
     dict.from_list([#("id_token", id_token), #("state", fixture.state)]),
     fixture.state,
   )
-  |> should.equal(Error("core.target_link_uri.mismatch"))
+  |> should.equal(Error(errors.TargetLinkUriMismatch))
 
   memory_provider.cleanup(fixture.memory)
 }
@@ -313,7 +322,7 @@ pub fn expired_nonce_failure_test() {
     dict.from_list([#("id_token", id_token), #("state", fixture.state)]),
     fixture.state,
   )
-  |> should.equal(Error("core.nonce.expired"))
+  |> should.equal(Error(errors.NonceValidationError(errors.NonceExpired)))
 
   memory_provider.cleanup(fixture.memory)
 }
@@ -345,7 +354,7 @@ pub fn replayed_nonce_failure_test() {
     dict.from_list([#("id_token", id_token), #("state", fixture.state)]),
     fixture.state,
   )
-  |> should.equal(Error("core.nonce.replayed"))
+  |> should.equal(Error(errors.NonceValidationError(errors.NonceReplayed)))
 
   memory_provider.cleanup(fixture.memory)
 }
@@ -360,7 +369,7 @@ pub fn unknown_kid_failure_test() {
     dict.from_list([#("id_token", id_token), #("state", fixture.state)]),
     fixture.state,
   )
-  |> should.equal(Error("core.jwt.invalid_signature"))
+  |> should.equal(Error(errors.JwtInvalidSignature))
 
   memory_provider.cleanup(fixture.memory)
 }
@@ -376,7 +385,7 @@ pub fn invalid_signature_failure_test() {
     dict.from_list([#("id_token", id_token), #("state", fixture.state)]),
     fixture.state,
   )
-  |> should.equal(Error("core.jwt.invalid_signature"))
+  |> should.equal(Error(errors.JwtInvalidSignature))
 
   memory_provider.cleanup(fixture.memory)
 }
@@ -391,7 +400,7 @@ pub fn malformed_keyset_failure_test() {
     dict.from_list([#("id_token", id_token), #("state", fixture.state)]),
     fixture.state,
   )
-  |> should.equal(Error("core.jwt.invalid_claim"))
+  |> should.equal(Error(errors.JwtInvalidClaim))
 
   memory_provider.cleanup(fixture.memory)
 }

@@ -16,6 +16,7 @@ import gleam/otp/actor.{type StartError}
 import gleam/pair
 import gleam/result
 import lightbulb/deployment.{type Deployment}
+import lightbulb/errors.{NonceExpired, NonceInvalid, NonceReplayed}
 import lightbulb/jwk.{type Jwk}
 import lightbulb/nonce.{type Nonce, Nonce}
 import lightbulb/providers/data_provider.{
@@ -46,10 +47,10 @@ type State {
 }
 
 pub type NonceValidation {
-  NonceValid
-  NonceExpired
-  NonceReplayed
-  NonceInvalid
+  ValidNonce
+  ExpiredNonce
+  ReplayedNonce
+  InvalidNonce
 }
 
 pub type Message {
@@ -150,7 +151,7 @@ fn handle_message(state: State, message: Message) -> actor.Next(State, Message) 
     ValidateNonce(value, reply_with) -> {
       case list.contains(state.used_nonces, value) {
         True -> {
-          actor.send(reply_with, NonceReplayed)
+          actor.send(reply_with, ReplayedNonce)
           actor.continue(state)
         }
 
@@ -164,7 +165,7 @@ fn handle_message(state: State, message: Message) -> actor.Next(State, Message) 
             Ok(nonce) -> {
               case birl.compare(birl.now(), nonce.expires_at) {
                 Lt -> {
-                  actor.send(reply_with, NonceValid)
+                  actor.send(reply_with, ValidNonce)
                   actor.continue(State(
                     ..state,
                     nonces: nonces,
@@ -173,14 +174,14 @@ fn handle_message(state: State, message: Message) -> actor.Next(State, Message) 
                 }
 
                 _ -> {
-                  actor.send(reply_with, NonceExpired)
+                  actor.send(reply_with, ExpiredNonce)
                   actor.continue(State(..state, nonces: nonces))
                 }
               }
             }
 
             Error(_) -> {
-              actor.send(reply_with, NonceInvalid)
+              actor.send(reply_with, InvalidNonce)
               actor.continue(state)
             }
           }
@@ -337,10 +338,10 @@ pub fn data_provider(memory_provider) -> Result(DataProvider, String) {
       },
       validate_nonce: fn(nonce) {
         case validate_nonce_detailed(memory_provider, nonce) {
-          NonceValid -> Ok(Nil)
-          NonceExpired -> Error("core.nonce.expired")
-          NonceReplayed -> Error("core.nonce.replayed")
-          NonceInvalid -> Error("core.nonce.invalid")
+          ValidNonce -> Ok(Nil)
+          ExpiredNonce -> Error(NonceExpired)
+          ReplayedNonce -> Error(NonceReplayed)
+          InvalidNonce -> Error(NonceInvalid)
         }
       },
       save_login_context: fn(context) {
@@ -399,7 +400,7 @@ fn validate_nonce_detailed(actor, value: String) {
 
 pub fn validate_nonce(actor, value) {
   case validate_nonce_detailed(actor, value) {
-    NonceValid -> Ok(Nil)
+    ValidNonce -> Ok(Nil)
     _ -> Error(Nil)
   }
 }

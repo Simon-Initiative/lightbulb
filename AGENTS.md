@@ -47,10 +47,12 @@
 
 ## Gleam Conventions
 
-- Prefer explicit, typed decoding and deterministic error strings for public APIs.
+- Prefer explicit, typed decoding and structured error types for public APIs.
 - Reuse existing modules and patterns before introducing new helpers.
 - For boolean early-return checks, prefer `gleam/bool.guard`.
-- Prefer returning `Result(_, String)` (or similarly explicit error types) rather than raising exceptions.
+- Prefer returning `Result(_, ErrorType)` with explicit error variants rather than raw strings.
+- When string errors are needed for compatibility, provide dedicated conversion helpers
+  (for example `lightbulb/errors.*_to_string`) instead of ad-hoc string literals.
 
 Preferred pattern:
 

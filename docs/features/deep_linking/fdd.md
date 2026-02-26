@@ -118,15 +118,11 @@ JWT signing behavior:
 - Deep linking request handling should remain additive and not break resource-link launch flows.
 
 ## 7. Error Taxonomy
-Preserve `Result(_, String)` externally, with deterministic categories:
-- `deep_linking.claim.missing`
-- `deep_linking.claim.invalid`
-- `deep_linking.settings.invalid`
-- `deep_linking.response.invalid_item_type`
-- `deep_linking.response.multiple_not_allowed`
-- `deep_linking.response.data_mismatch`
-- `deep_linking.response.signing_failed`
-- `deep_linking.response.invalid_return_url`
+Use structured Deep Linking errors for API testability and explicit handling:
+- `lightbulb/errors.DeepLinkingError`
+
+String compatibility should be provided via conversion helper:
+- `lightbulb/errors.deep_linking_error_to_string`
 
 ## 8. Runtime Flows
 
