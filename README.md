@@ -128,6 +128,8 @@ fn get_cookie(req: Request, name name: String) -> Result(String, Nil) {
 
 Further documentation can be found at <https://hexdocs.pm/lightbulb>.
 
+For API changes across versions, see [`CHANGELOG.md`](./CHANGELOG.md).
+
 ### Deep Linking
 
 Deep-link launches can be decoded from validated launch claims, then answered with a

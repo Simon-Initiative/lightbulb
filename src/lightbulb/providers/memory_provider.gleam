@@ -1,13 +1,14 @@
 /// Memory Provider is an in-memory data provider for Lightbulb.
-/// 
+///
 /// Warning: Data stored in this provider is not persistent and will be lost!
-/// 
+///
 /// This module can be used to quickly get up and running with Lightbulb
 /// without needing a database or external storage. It's also useful for testing
 /// and development purposes. It's important to note that this provider is not
 /// suitable for production use, as it does not persist data across restarts.
 import birl
 import birl/duration
+import gleam/dict
 import gleam/erlang/process.{type Subject}
 import gleam/list
 import gleam/order.{Lt}
@@ -17,7 +18,11 @@ import gleam/result
 import lightbulb/deployment.{type Deployment}
 import lightbulb/jwk.{type Jwk}
 import lightbulb/nonce.{type Nonce, Nonce}
-import lightbulb/providers/data_provider.{type DataProvider, DataProvider}
+import lightbulb/providers/data_provider.{
+  type DataProvider,
+  type LoginContext,
+  DataProvider,
+}
 import lightbulb/providers/memory_provider/tables.{type Table}
 import lightbulb/registration.{type Registration}
 import youid/uuid
@@ -33,9 +38,18 @@ type State {
     jwks: List(Jwk),
     active_jwk_kid: String,
     nonces: List(Nonce),
+    used_nonces: List(String),
+    login_contexts: dict.Dict(String, LoginContext),
     registrations: Table(Registration),
     deployments: Table(Deployment),
   )
+}
+
+pub type NonceValidation {
+  NonceValid
+  NonceExpired
+  NonceReplayed
+  NonceInvalid
 }
 
 pub type Message {
@@ -45,7 +59,17 @@ pub type Message {
   CreateJwk(jwk: Jwk)
   SetActiveJwk(kid: String)
   CreateNonce(reply_with: Subject(Result(Nonce, Nil)))
-  ValidateNonce(value: String, reply_with: Subject(Result(Nil, Nil)))
+  InsertNonce(nonce: Nonce)
+  ValidateNonce(value: String, reply_with: Subject(NonceValidation))
+  SaveLoginContext(
+    context: LoginContext,
+    reply_with: Subject(Result(Nil, Nil)),
+  )
+  GetLoginContext(
+    state: String,
+    reply_with: Subject(Result(LoginContext, Nil)),
+  )
+  ConsumeLoginContext(state: String, reply_with: Subject(Result(Nil, Nil)))
   CleanupExpiredNonces
   CreateRegistration(
     registration: Registration,
@@ -119,15 +143,70 @@ fn handle_message(state: State, message: Message) -> actor.Next(State, Message) 
       actor.continue(State(..state, nonces: [nonce, ..state.nonces]))
     }
 
+    InsertNonce(nonce) -> {
+      actor.continue(State(..state, nonces: [nonce, ..state.nonces]))
+    }
+
     ValidateNonce(value, reply_with) -> {
-      let result = list.find(state.nonces, fn(nonce) { nonce.nonce == value })
+      case list.contains(state.used_nonces, value) {
+        True -> {
+          actor.send(reply_with, NonceReplayed)
+          actor.continue(state)
+        }
 
-      actor.send(reply_with, result |> result.map(fn(_) { Nil }))
+        False -> {
+          let maybe_nonce = list.find(state.nonces, fn(nonce) { nonce.nonce == value })
 
-      // remove the nonce from the list so it can't be reused
-      let nonces = list.filter(state.nonces, fn(nonce) { nonce.nonce != value })
+          let nonces =
+            list.filter(state.nonces, fn(nonce) { nonce.nonce != value })
 
-      actor.continue(State(..state, nonces: nonces))
+          case maybe_nonce {
+            Ok(nonce) -> {
+              case birl.compare(birl.now(), nonce.expires_at) {
+                Lt -> {
+                  actor.send(reply_with, NonceValid)
+                  actor.continue(State(
+                    ..state,
+                    nonces: nonces,
+                    used_nonces: [value, ..state.used_nonces],
+                  ))
+                }
+
+                _ -> {
+                  actor.send(reply_with, NonceExpired)
+                  actor.continue(State(..state, nonces: nonces))
+                }
+              }
+            }
+
+            Error(_) -> {
+              actor.send(reply_with, NonceInvalid)
+              actor.continue(state)
+            }
+          }
+        }
+      }
+    }
+
+    SaveLoginContext(context, reply_with) -> {
+      actor.send(reply_with, Ok(Nil))
+      actor.continue(State(
+        ..state,
+        login_contexts: dict.insert(state.login_contexts, context.state, context),
+      ))
+    }
+
+    GetLoginContext(state_key, reply_with) -> {
+      actor.send(reply_with, dict.get(state.login_contexts, state_key))
+      actor.continue(state)
+    }
+
+    ConsumeLoginContext(state_key, reply_with) -> {
+      actor.send(reply_with, dict.get(state.login_contexts, state_key) |> result.map(fn(_) { Nil }))
+      actor.continue(State(
+        ..state,
+        login_contexts: dict.delete(state.login_contexts, state_key),
+      ))
     }
 
     CleanupExpiredNonces -> {
@@ -224,6 +303,8 @@ pub fn start() -> Result(MemoryProvider, StartError) {
         jwks: [],
         active_jwk_kid: "",
         nonces: [],
+        used_nonces: [],
+        login_contexts: dict.new(),
         registrations: tables.new(),
         deployments: tables.new(),
       )
@@ -255,8 +336,24 @@ pub fn data_provider(memory_provider) -> Result(DataProvider, String) {
         |> result.replace_error("Failed to create nonce")
       },
       validate_nonce: fn(nonce) {
-        validate_nonce(memory_provider, nonce)
-        |> result.replace_error("Failed to validate nonce")
+        case validate_nonce_detailed(memory_provider, nonce) {
+          NonceValid -> Ok(Nil)
+          NonceExpired -> Error("core.nonce.expired")
+          NonceReplayed -> Error("core.nonce.replayed")
+          NonceInvalid -> Error("core.nonce.invalid")
+        }
+      },
+      save_login_context: fn(context) {
+        save_login_context(memory_provider, context)
+        |> result.replace_error("core.state.invalid")
+      },
+      get_login_context: fn(state_key) {
+        get_login_context(memory_provider, state_key)
+        |> result.replace_error("core.state.not_found")
+      },
+      consume_login_context: fn(state_key) {
+        consume_login_context(memory_provider, state_key)
+        |> result.replace_error("core.state.not_found")
       },
       get_registration: fn(issuer, client_id) {
         get_registration_by(memory_provider, issuer, client_id)
@@ -292,8 +389,31 @@ pub fn create_nonce(actor) {
   process.call(actor, call_timeout, CreateNonce)
 }
 
-pub fn validate_nonce(actor, value) {
+pub fn insert_nonce(actor, nonce: Nonce) {
+  process.send(actor, InsertNonce(nonce))
+}
+
+fn validate_nonce_detailed(actor, value: String) {
   process.call(actor, call_timeout, ValidateNonce(value, _))
+}
+
+pub fn validate_nonce(actor, value) {
+  case validate_nonce_detailed(actor, value) {
+    NonceValid -> Ok(Nil)
+    _ -> Error(Nil)
+  }
+}
+
+pub fn save_login_context(actor, context: LoginContext) {
+  process.call(actor, call_timeout, SaveLoginContext(context, _))
+}
+
+pub fn get_login_context(actor, state_key: String) {
+  process.call(actor, call_timeout, GetLoginContext(state_key, _))
+}
+
+pub fn consume_login_context(actor, state_key: String) {
+  process.call(actor, call_timeout, ConsumeLoginContext(state_key, _))
 }
 
 pub fn cleanup_expired_nonces(actor) {

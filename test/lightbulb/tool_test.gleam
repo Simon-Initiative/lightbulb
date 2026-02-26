@@ -29,10 +29,7 @@ pub fn validate_message_type_deep_linking_request_missing_settings_test() {
     ])
 
   tool.validate_message_type(claims)
-  |> should.equal(Error(
-    "Invalid message type "
-    <> deep_linking.lti_message_type_deep_linking_request,
-  ))
+  |> should.equal(Error("core.jwt.invalid_claim"))
 }
 
 fn deep_link_settings_claim() -> dynamic.Dynamic {

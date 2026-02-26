@@ -38,6 +38,12 @@
 - Run focused tests first, then broader tests when behavior changes cross module boundaries.
 - Prefer explicit `Result` error paths over exceptions or panics.
 - When working from a feature `plan.md`, check off checklist items when tasks are completed.
+- For any public API or client-facing behavior change, update `CHANGELOG.md` in the same change:
+  - add/update notes under `Unreleased` (WIP) until release day
+  - note the intended target version
+  - summarize what changed for consumers
+  - include concrete migration steps/code changes required in client apps
+  - when cutting a release, promote `Unreleased` notes into the released version section
 
 ## Gleam Conventions
 

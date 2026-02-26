@@ -11,20 +11,46 @@ import gleam/json
 import gleam/list
 import gleam/order.{Gt, Lt}
 import gleam/result
+import gleam/string
 import gleam/uri.{query_to_string}
 import lightbulb/deep_linking
 import lightbulb/deep_linking/settings
 import lightbulb/jose.{type Claims, JoseJws, JoseJwt}
-import lightbulb/providers/data_provider.{type DataProvider}
+import lightbulb/providers/data_provider.{
+  type DataProvider,
+  LoginContext,
+}
 import lightbulb/registration.{type Registration}
 import lightbulb/utils/logger
 import youid/uuid
 
 const deployment_id_claim = "https://purl.imsglobal.org/spec/lti/claim/deployment_id"
-
 const message_type_claim = "https://purl.imsglobal.org/spec/lti/claim/message_type"
-
+const version_claim = "https://purl.imsglobal.org/spec/lti/claim/version"
+const target_link_uri_claim = "https://purl.imsglobal.org/spec/lti/claim/target_link_uri"
+const resource_link_claim = "https://purl.imsglobal.org/spec/lti/claim/resource_link"
+const roles_claim = "https://purl.imsglobal.org/spec/lti/claim/roles"
 const lti_message_hint_claim = "lti_message_hint"
+const login_context_ttl_minutes = 5
+const timestamp_skew_seconds = 60
+const inline_jwks_prefix = "inline_jwks:"
+
+fn error(code: String) -> String {
+  code
+}
+
+fn error_detail(code: String, detail: String) -> String {
+  code <> ":" <> detail
+}
+
+fn required_param(
+  params: Dict(String, String),
+  key: String,
+  code: String,
+) -> Result(String, String) {
+  dict.get(params, key)
+  |> result.replace_error(error_detail(code, key))
+}
 
 /// Builds an OIDC login response for the tool. This function will return a `state` and `redirect_url`.
 /// The `state` is an opaque string that will be used to verify the response from the
@@ -35,17 +61,41 @@ pub fn oidc_login(
   provider: DataProvider,
   params: Dict(String, String),
 ) -> Result(#(String, String), String) {
-  use _params <- result.try(validate_issuer_exists(params))
+  use issuer <- result.try(required_param(params, "iss", "core.login.missing_param"))
   use target_link_uri <- result.try(
-    dict.get(params, "target_link_uri")
-    |> result.replace_error("Missing target_link_uri"),
+    required_param(params, "target_link_uri", "core.login.missing_param"),
   )
-  use login_hint <- result.try(validate_login_hint_exists(params))
-  use registration <- result.try(validate_registration(provider, params))
-  use client_id <- result.try(validate_client_id_exists(params))
+  use login_hint <- result.try(
+    required_param(params, "login_hint", "core.login.missing_param"),
+  )
+  use client_id <- result.try(
+    required_param(params, "client_id", "core.login.missing_param"),
+  )
+
+  use registration <- result.try(
+    provider.get_registration(issuer, client_id)
+    |> result.replace_error(error("core.registration.not_found")),
+  )
 
   let state = uuid.v4_string()
-  let assert Ok(nonce) = provider.create_nonce()
+  use nonce <- result.try(
+    provider.create_nonce()
+    |> result.replace_error(error("core.nonce.invalid")),
+  )
+
+  let login_context =
+    LoginContext(
+      state: state,
+      target_link_uri: target_link_uri,
+      issuer: issuer,
+      client_id: client_id,
+      expires_at: birl.now() |> birl.add(duration.minutes(login_context_ttl_minutes)),
+    )
+
+  use _ <- result.try(
+    provider.save_login_context(login_context)
+    |> result.replace_error(error("core.state.invalid")),
+  )
 
   let query_params = [
     #("scope", "openid"),
@@ -65,56 +115,13 @@ pub fn oidc_login(
       #("lti_message_hint", lti_message_hint),
       ..query_params
     ]
-    Error(_) ->
-      // if the hint is not present, we don't need to pass it back
-      query_params
+    Error(_) -> query_params
   }
 
   let redirect_url =
     registration.auth_endpoint <> "?" <> query_to_string(query_params)
 
   Ok(#(state, redirect_url))
-}
-
-fn validate_issuer_exists(
-  params: Dict(String, String),
-) -> Result(Dict(String, String), String) {
-  case dict.get(params, "iss") {
-    Ok(_issuer) -> Ok(params)
-    Error(_) -> Error("Missing issuer")
-  }
-}
-
-fn validate_login_hint_exists(
-  params: Dict(String, String),
-) -> Result(String, String) {
-  case dict.get(params, "login_hint") {
-    Ok(login_hint) -> Ok(login_hint)
-    Error(_) -> Error("Missing login hint")
-  }
-}
-
-fn validate_registration(
-  provider: DataProvider,
-  params: Dict(String, String),
-) -> Result(Registration, String) {
-  use issuer <- result.try(
-    dict.get(params, "iss") |> result.replace_error("Missing issuer"),
-  )
-  use client_id <- result.try(
-    dict.get(params, "client_id") |> result.replace_error("Missing client_id"),
-  )
-
-  provider.get_registration(issuer, client_id)
-}
-
-fn validate_client_id_exists(
-  params: Dict(String, String),
-) -> Result(String, String) {
-  case dict.get(params, "client_id") {
-    Ok(client_id) -> Ok(client_id)
-    Error(_) -> Error("Missing client id")
-  }
 }
 
 /// Validates the OIDC login response from the OIDC provider. This function will validate and unpack
@@ -126,11 +133,31 @@ pub fn validate_launch(
   session_state: String,
 ) -> Result(Claims, String) {
   use id_token <- result.try(
-    dict.get(params, "id_token") |> result.replace_error("Missing id_token"),
+    required_param(params, "id_token", "core.launch.missing_param"),
   )
-  use _state <- result.try(validate_oidc_state(params, session_state))
+  use request_state <- result.try(
+    required_param(params, "state", "core.launch.missing_param"),
+  )
+
+  use <- bool.guard(
+    when: request_state != session_state,
+    return: Error(error("core.state.invalid")),
+  )
+
   use registration <- result.try(peek_validate_registration(id_token, provider))
   use claims <- result.try(verify_token(id_token, registration.keyset_url))
+
+  // Core validation matrix for resource link launches:
+  // - message_type              -> validate_required_launch_claims
+  // - version (1.3.0)           -> validate_resource_link_required_claims
+  // - deployment_id             -> validate_resource_link_required_claims + validate_deployment
+  // - target_link_uri           -> validate_resource_link_required_claims + validate_login_context
+  // - resource_link.id          -> validate_resource_link_required_claims
+  // - roles[]                   -> validate_resource_link_required_claims
+  // - exp/iat(/nbf)             -> validate_timestamps
+  // - nonce one-time + expiry   -> validate_nonce
+
+  use _message_type <- result.try(validate_required_launch_claims(claims))
   use _claims <- result.try(validate_deployment(
     claims,
     provider,
@@ -139,49 +166,77 @@ pub fn validate_launch(
   ))
   use _claims <- result.try(validate_timestamps(claims))
   use _claims <- result.try(validate_nonce(claims, provider))
-  use _claims <- result.try(validate_message_type(claims))
-
-  Ok(claims)
-}
-
-fn validate_oidc_state(params, session_state) {
-  use state <- result.try(
-    dict.get(params, "state")
-    |> result.replace_error("Missing state"),
+  use _claims <- result.try(
+    validate_login_context(claims, provider, request_state, registration),
+  )
+  use _ <- result.try(
+    provider.consume_login_context(request_state)
+    |> result.replace_error(error("core.state.not_found")),
   )
 
-  case state == session_state {
-    True -> Ok(state)
-    False -> Error("Invalid state")
-  }
+  Ok(claims)
 }
 
 fn peek_validate_registration(
   id_token: String,
   provider: DataProvider,
 ) -> Result(Registration, String) {
-  use #(issuer, client_id) <- result.try(peek_issuer_client_id(id_token))
+  let JoseJwt(claims: claims) = jose.peek(id_token)
+
+  use issuer <- result.try(
+    read_claim(claims, "iss", decode.string)
+    |> result.replace_error(error("core.jwt.invalid_claim")),
+  )
+  use client_id <- result.try(resolve_client_id_from_claims(claims))
 
   provider.get_registration(issuer, client_id)
+  |> result.replace_error(error("core.registration.not_found"))
 }
 
-fn peek_issuer_client_id(id_token) {
-  use issuer <- result.try(peek_claim(id_token, "iss", decode.string))
-  use client_id <- result.try(peek_claim(id_token, "aud", decode.string))
+fn resolve_client_id_from_claims(claims: Claims) -> Result(String, String) {
+  use audience <- result.try(read_claim(claims, "aud", decode.dynamic))
+  use audiences <- result.try(parse_audiences(audience))
 
-  Ok(#(issuer, client_id))
-}
+  case audiences {
+    [] -> Error(error("core.audience.invalid"))
 
-fn peek_claim(jwt_string: String, claim: String, decoder: Decoder(a)) {
-  case jose.peek(jwt_string) {
-    JoseJwt(claims: claims) -> {
-      case dict.get(claims, claim) {
-        Ok(value) ->
-          decode.run(value, decoder) |> result.replace_error("Invalid claim")
-        Error(_) -> Error("Missing claim")
-      }
+    [single] -> Ok(single)
+
+    [_, _, ..] -> {
+      use azp <- result.try(
+        read_claim(claims, "azp", decode.string)
+        |> result.replace_error(error("core.audience.invalid")),
+      )
+
+      use <- bool.guard(
+        when: !list.any(audiences, fn(audience_client_id) { audience_client_id == azp }),
+        return: Error(error("core.audience.invalid")),
+      )
+
+      Ok(azp)
     }
   }
+}
+
+fn parse_audiences(aud: Dynamic) -> Result(List(String), String) {
+  case decode.run(aud, decode.string) {
+    Ok(single) -> Ok([single])
+
+    Error(_) ->
+      decode.run(aud, decode.list(decode.string))
+      |> result.replace_error(error("core.audience.invalid"))
+  }
+}
+
+fn read_claim(
+  claims: Claims,
+  claim: String,
+  decoder: Decoder(a),
+) -> Result(a, String) {
+  use value <- result.try(dict.get(claims, claim) |> result.replace_error(claim))
+
+  decode.run(value, decoder)
+  |> result.replace_error(claim)
 }
 
 fn peek_header_claim(jwt_string, header: String, decoder: Decoder(a)) {
@@ -189,17 +244,18 @@ fn peek_header_claim(jwt_string, header: String, decoder: Decoder(a)) {
     JoseJws(headers: headers, ..) -> {
       case dict.get(headers, header) {
         Ok(value) ->
-          decode.run(value, decoder) |> result.replace_error("Invalid header")
-        Error(_) -> Error("Missing header")
+          decode.run(value, decoder)
+          |> result.replace_error(error("core.jwt.invalid_claim"))
+        Error(_) -> Error(error("core.jwt.invalid_claim"))
       }
     }
   }
 }
 
-fn verify_token(id_token, keyset_url) {
+fn verify_token(id_token: String, keyset_url: String) {
   use kid <- result.try(
     peek_header_claim(id_token, "kid", decode.string)
-    |> result.replace_error("Missing kid"),
+    |> result.replace_error(error("core.jwt.invalid_claim")),
   )
   use jwk <- result.try(fetch_jwk(keyset_url, kid))
 
@@ -208,61 +264,129 @@ fn verify_token(id_token, keyset_url) {
 
     _ -> {
       logger.error_meta("Failed to verify id_token", id_token)
-
-      Error("Failed to verify id_token")
+      Error(error("core.jwt.invalid_signature"))
     }
   }
 }
 
-fn fetch_jwk(keyset_url, kid) {
-  use req <- result.try(
-    request.to(keyset_url) |> result.replace_error("Invalid keyset URL"),
-  )
+fn fetch_jwk(keyset_url: String, kid: String) {
+  case string.starts_with(keyset_url, inline_jwks_prefix) {
+    True ->
+      string.replace(keyset_url, inline_jwks_prefix, "")
+      |> select_jwk_from_keyset(kid)
 
-  let req =
-    request.prepend_header(req, "accept", "application/vnd.hmrc.1.0+json")
+    False -> {
+      use req <- result.try(
+        request.to(keyset_url)
+        |> result.replace_error(error("core.jwt.invalid_claim")),
+      )
 
-  // Send the HTTP request to the server
-  use resp <- result.try(
-    httpc.send(req)
-    |> result.replace_error("Failed to fetch keyset from " <> keyset_url),
-  )
+      let req = request.prepend_header(req, "accept", "application/json")
 
-  case resp {
-    Response(status: 200, body: body, ..) -> {
-      // Parse the JSON response
-      let keyset_decoder = {
-        use keys <- decode.field(
-          "keys",
-          decode.list(decode.dict(decode.string, decode.string)),
-        )
+      use resp <- result.try(
+        httpc.send(req)
+        |> result.replace_error(error("core.jwt.invalid_signature")),
+      )
 
-        decode.success(keys)
-      }
+      case resp {
+        Response(status: 200, body: body, ..) -> select_jwk_from_keyset(body, kid)
 
-      case json.parse(from: body, using: keyset_decoder) {
-        Ok(keys) -> {
-          // Extract the JWK from the JSON response
-          list.find(keys, fn(key) { dict.get(key, "kid") == Ok(kid) })
-          |> result.map_error(fn(_) {
-            logger.error_meta("Failed to find JWK with kid " <> kid, keys)
-
-            "Failed to find JWK with kid"
-          })
-        }
-        Error(_) -> {
-          logger.error_meta("Failed to parse keyset", #(keyset_url, body))
-
-          Error("Failed to parse keyset")
+        Response(status: status, ..) -> {
+          logger.error_meta("Failed to fetch keyset", #(status, keyset_url))
+          Error(error("core.jwt.invalid_signature"))
         }
       }
-    }
-    Response(status: status, ..) -> {
-      logger.error_meta("Failed to fetch keyset", #(status, keyset_url))
-
-      Error("Failed to fetch keyset")
     }
   }
+}
+
+fn select_jwk_from_keyset(body: String, kid: String) {
+  let keyset_decoder = {
+    use keys <- decode.field(
+      "keys",
+      decode.list(decode.dict(decode.string, decode.string)),
+    )
+
+    decode.success(keys)
+  }
+
+  case json.parse(from: body, using: keyset_decoder) {
+    Ok(keys) ->
+      list.find(keys, fn(key) { dict.get(key, "kid") == Ok(kid) })
+      |> result.replace_error(error("core.jwt.invalid_signature"))
+
+    Error(_) -> {
+      logger.error_meta("Failed to parse keyset", body)
+      Error(error("core.jwt.invalid_claim"))
+    }
+  }
+}
+
+fn validate_required_launch_claims(claims: Claims) -> Result(String, String) {
+  use message_type <- result.try(
+    read_claim(claims, message_type_claim, decode.string)
+    |> result.replace_error(error("core.jwt.invalid_claim")),
+  )
+
+  case message_type {
+    "LtiResourceLinkRequest" ->
+      validate_resource_link_required_claims(claims)
+      |> result.map(fn(_) { message_type })
+
+    message
+      if message == deep_linking.lti_message_type_deep_linking_request
+    -> {
+      settings.from_claims(claims)
+      |> result.replace_error(error("core.jwt.invalid_claim"))
+      |> result.map(fn(_) { message_type })
+    }
+
+    _ -> Error(error("core.message_type.unsupported"))
+  }
+}
+
+fn validate_resource_link_required_claims(claims: Claims) {
+  use version <- result.try(
+    read_claim(claims, version_claim, decode.string)
+    |> result.replace_error(error("core.jwt.invalid_claim")),
+  )
+  use <- bool.guard(
+    when: version != "1.3.0",
+    return: Error(error("core.jwt.invalid_claim")),
+  )
+
+  use _deployment_id <- result.try(
+    read_claim(claims, deployment_id_claim, decode.string)
+    |> result.replace_error(error("core.jwt.invalid_claim")),
+  )
+  use _target_link_uri <- result.try(
+    read_claim(claims, target_link_uri_claim, decode.string)
+    |> result.replace_error(error("core.jwt.invalid_claim")),
+  )
+  use resource_link <- result.try(
+    read_claim(claims, resource_link_claim, decode.dynamic)
+    |> result.replace_error(error("core.jwt.invalid_claim")),
+  )
+
+  use _resource_link_id <- result.try(
+    decode.run(resource_link, {
+      use resource_link_id <- decode.field("id", decode.string)
+      decode.success(resource_link_id)
+    })
+    |> result.replace_error(error("core.jwt.invalid_claim")),
+  )
+
+  use roles <- result.try(
+    read_claim(claims, roles_claim, decode.list(decode.string))
+    |> result.replace_error(error("core.jwt.invalid_claim")),
+  )
+
+  use <- bool.guard(
+    when: roles == [],
+    return: Error(error("core.jwt.invalid_claim")),
+  )
+
+  Ok(claims)
 }
 
 fn validate_deployment(
@@ -271,126 +395,120 @@ fn validate_deployment(
   issuer: String,
   client_id: String,
 ) {
-  use deployment_id <- result.try(get_claim(
-    claims,
-    deployment_id_claim,
-    decode.string,
-  ))
+  use deployment_id <- result.try(
+    read_claim(claims, deployment_id_claim, decode.string)
+    |> result.replace_error(error("core.jwt.invalid_claim")),
+  )
 
   provider.get_deployment(issuer, client_id, deployment_id)
+  |> result.map(fn(_) { claims })
+  |> result.replace_error(error("core.deployment.not_found"))
 }
 
 fn validate_timestamps(claims: Claims) {
   use exp <- result.try(
-    get_claim(claims, "exp", decode.int)
-    |> result.map(birl.from_unix),
+    read_claim(claims, "exp", decode.int)
+    |> result.map(birl.from_unix)
+    |> result.replace_error(error("core.jwt.invalid_claim")),
   )
   use iat <- result.try(
-    get_claim(claims, "iat", decode.int) |> result.map(birl.from_unix),
+    read_claim(claims, "iat", decode.int)
+    |> result.map(birl.from_unix)
+    |> result.replace_error(error("core.jwt.invalid_claim")),
   )
 
   let now = birl.now()
-  let buffer_sec = 2
-  let a_few_seconds_ago = birl.subtract(now, duration.seconds(buffer_sec))
-  let a_few_seconds_later = birl.add(now, duration.seconds(buffer_sec))
+  let skew = duration.seconds(timestamp_skew_seconds)
+  let lower_bound = birl.subtract(now, skew)
+  let upper_bound = birl.add(now, skew)
 
   use <- bool.guard(
-    birl.compare(exp, a_few_seconds_ago) == Lt,
-    Error("JWT exp is expired"),
+    when: birl.compare(exp, lower_bound) == Lt,
+    return: Error(error("core.jwt.expired")),
   )
   use <- bool.guard(
-    birl.compare(iat, a_few_seconds_later) == Gt,
-    Error("JWT iat is in the future"),
+    when: birl.compare(iat, upper_bound) == Gt,
+    return: Error(error("core.jwt.invalid_claim")),
+  )
+
+  case dict.get(claims, "nbf") {
+    Ok(nbf_dynamic) -> {
+      use nbf <- result.try(
+        decode.run(nbf_dynamic, decode.int)
+        |> result.map(birl.from_unix)
+        |> result.replace_error(error("core.jwt.invalid_claim")),
+      )
+
+      use <- bool.guard(
+        when: birl.compare(nbf, upper_bound) == Gt,
+        return: Error(error("core.jwt.not_yet_valid")),
+      )
+
+      Ok(claims)
+    }
+
+    Error(_) -> Ok(claims)
+  }
+}
+
+fn validate_nonce(claims: Claims, provider: DataProvider) {
+  use nonce <- result.try(
+    read_claim(claims, "nonce", decode.string)
+    |> result.replace_error(error("core.jwt.invalid_claim")),
+  )
+
+  provider.validate_nonce(nonce)
+  |> result.map_error(fn(code) {
+    logger.error_meta("Failed to validate nonce", #(code, nonce))
+    code
+  })
+  |> result.map(fn(_) { claims })
+}
+
+fn validate_login_context(
+  claims: Claims,
+  provider: DataProvider,
+  request_state: String,
+  registration: Registration,
+) {
+  use context <- result.try(
+    provider.get_login_context(request_state)
+    |> result.replace_error(error("core.state.not_found")),
+  )
+
+  let LoginContext(
+    target_link_uri: stored_target_link_uri,
+    issuer: issuer,
+    client_id: client_id,
+    expires_at: expires_at,
+    ..
+  ) = context
+
+  use <- bool.guard(
+    when: birl.compare(expires_at, birl.now()) != Gt,
+    return: Error(error("core.state.not_found")),
+  )
+  use <- bool.guard(
+    when: issuer != registration.issuer || client_id != registration.client_id,
+    return: Error(error("core.state.invalid")),
+  )
+
+  use target_link_uri <- result.try(
+    read_claim(claims, target_link_uri_claim, decode.string)
+    |> result.replace_error(error("core.jwt.invalid_claim")),
+  )
+
+  use <- bool.guard(
+    when: target_link_uri != stored_target_link_uri,
+    return: Error(error("core.target_link_uri.mismatch")),
   )
 
   Ok(claims)
 }
 
-fn validate_nonce(claims: Claims, provider: DataProvider) {
-  use nonce <- result.try(get_claim(claims, "nonce", decode.string))
-
-  case provider.validate_nonce(nonce) {
-    Ok(_) -> Ok(claims)
-
-    Error(e) -> {
-      logger.error_meta("Failed to validate nonce: " <> e, claims)
-
-      Error(e)
-    }
-  }
-}
-
-fn validate_lti_resource_link_request_message(
-  claims: Claims,
-) -> Result(Dict(String, Dynamic), String) {
-  case get_claim(claims, message_type_claim, decode.string) {
-    Ok("LtiResourceLinkRequest") -> Ok(claims)
-    _ -> {
-      logger.error_meta("Invalid message type", #(claims, message_type_claim))
-
-      Error("Invalid message type")
-    }
-  }
-}
-
-fn validate_lti_deep_linking_request_message(
-  claims: Claims,
-) -> Result(Dict(String, Dynamic), String) {
-  case get_claim(claims, message_type_claim, decode.string) {
-    Ok(message_type)
-      if message_type == deep_linking.lti_message_type_deep_linking_request
-    -> {
-      settings.from_claims(claims)
-      |> result.map(fn(_) { claims })
-      |> result.replace_error("Invalid deep linking settings")
-    }
-
-    _ -> {
-      logger.error_meta("Invalid message type", #(claims, message_type_claim))
-
-      Error("Invalid message type")
-    }
-  }
-}
-
-const message_validators = [
-  #("LtiResourceLinkRequest", validate_lti_resource_link_request_message),
-  #(
-    deep_linking.lti_message_type_deep_linking_request,
-    validate_lti_deep_linking_request_message,
-  ),
-]
-
 /// Validates the LTI launch message type and dispatches to the corresponding
 /// message-specific validator.
 pub fn validate_message_type(claims: Claims) {
-  use message_type <- result.try(get_claim(
-    claims,
-    message_type_claim,
-    decode.string,
-  ))
-
-  use #(_, validator) <- result.try(
-    list.find(message_validators, fn(validator) { validator.0 == message_type })
-    |> result.replace_error(
-      "No validator found for message type " <> message_type,
-    ),
-  )
-
-  validator(claims)
-  |> result.replace_error("Invalid message type " <> message_type)
-}
-
-fn get_claim(
-  claims: Claims,
-  claim: String,
-  decoder: Decoder(a),
-) -> Result(a, String) {
-  dict.get(claims, claim)
-  |> result.map(fn(c) {
-    decode.run(c, decoder)
-    |> result.replace_error("Invalid claim " <> claim)
-  })
-  |> result.replace_error("Missing claim " <> claim)
-  |> result.flatten()
+  validate_required_launch_claims(claims)
+  |> result.map(fn(_) { claims })
 }
