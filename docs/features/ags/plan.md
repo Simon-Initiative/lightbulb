@@ -36,7 +36,7 @@
   - [ ] `can_post_scores`
   - [ ] `can_read_results`
 - [ ] Update `grade_passback_available` semantics to align with score-posting capability.
-- [ ] Ensure operation entry points fail fast with explicit `ags.scope.insufficient` errors when called against launch claims lacking required scope.
+- [ ] Ensure operation entry points fail fast with explicit typed scope errors (for example `ScopeInsufficient`) when called against launch claims lacking required scope.
 
 ## Phase 4: Paging Support via Link Headers
 - [ ] Add `src/lightbulb/http/link_header.gleam` parser for `next/prev/first/last` link relations.

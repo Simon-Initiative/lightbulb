@@ -63,11 +63,11 @@ Gaps vs AGS 2.0:
 
 ### 3.3 Operations
 Additive APIs to add in `src/lightbulb/services/ags.gleam`:
-- `get_line_item(http_provider, line_item_url, access_token) -> Result(LineItem, String)`
-- `list_line_items(http_provider, line_items_service_url, query, access_token) -> Result(Paged(LineItem), String)`
-- `update_line_item(http_provider, line_item, access_token) -> Result(LineItem, String)`
-- `delete_line_item(http_provider, line_item_url, access_token) -> Result(Nil, String)`
-- `list_results(http_provider, line_item_url, query, access_token) -> Result(Paged(Result), String)`
+- `get_line_item(http_provider, line_item_url, access_token) -> Result(LineItem, AgsError)`
+- `list_line_items(http_provider, line_items_service_url, query, access_token) -> Result(Paged(LineItem), AgsError)`
+- `update_line_item(http_provider, line_item, access_token) -> Result(LineItem, AgsError)`
+- `delete_line_item(http_provider, line_item_url, access_token) -> Result(Nil, AgsError)`
+- `list_results(http_provider, line_item_url, query, access_token) -> Result(Paged(Result), AgsError)`
 
 Keep compatibility wrappers:
 - Preserve existing `create_line_item`, `fetch_or_create_line_item`, `post_score` signatures.
@@ -130,16 +130,19 @@ Add explicit helper predicates:
 - If parsing fails, operation still returns items with empty links and logs parse warning.
 
 ## 7. Error Taxonomy
-Keep public return type `Result(_, String)` for compatibility.
-Use deterministic prefixed error categories:
-- `ags.request.invalid_url`
-- `ags.http.unexpected_status`
-- `ags.decode.line_item`
-- `ags.decode.result`
-- `ags.scope.insufficient`
-- `ags.pagination.invalid_link_header`
+Use explicit AGS error types for public APIs (for example `AgsError`) rather than
+string identifiers.
 
-This preserves existing API shape while making failures debuggable and testable.
+Recommended variants:
+- `RequestInvalidUrl`
+- `HttpUnexpectedStatus`
+- `DecodeLineItem`
+- `DecodeResult`
+- `ScopeInsufficient`
+- `PaginationInvalidLinkHeader`
+
+If string output is needed for logging/UI compatibility, provide a dedicated conversion
+function (for example `ags_error_to_string`).
 
 ## 8. Runtime Flows
 

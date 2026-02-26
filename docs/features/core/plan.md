@@ -9,7 +9,7 @@
   - [x] target_link_uri claim
   - [x] resource_link.id
   - [x] roles list
-- [x] Normalize error categories for claim failures (`core.jwt.invalid_claim`, `core.message_type.unsupported`, etc.).
+- [x] Normalize typed error variants for claim failures (`JwtInvalidClaim`, `MessageTypeUnsupported`, etc.).
 
 ## Phase 2: Audience and Registration Resolution
 - [x] Replace `aud` string-only decode path with `aud` string-or-list support.

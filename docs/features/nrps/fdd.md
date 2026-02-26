@@ -69,13 +69,14 @@ Keep existing:
 
 ### 3.3 Operations
 Additive API surface in `src/lightbulb/services/nrps.gleam`:
-- `get_nrps_claim(claims) -> Result(NrpsClaim, String)` (make public)
-- `fetch_memberships_with_options(http_provider, context_memberships_url, query, access_token) -> Result(MembershipsPage, String)`
-- `fetch_next_memberships_page(http_provider, next_url, access_token) -> Result(MembershipsPage, String)`
-- `fetch_differences_memberships_page(http_provider, differences_url, access_token) -> Result(MembershipsPage, String)`
+- `get_nrps_claim(claims) -> Result(NrpsClaim, NrpsError)` (make public)
+- `fetch_memberships_with_options(http_provider, context_memberships_url, query, access_token) -> Result(MembershipsPage, NrpsError)`
+- `fetch_next_memberships_page(http_provider, next_url, access_token) -> Result(MembershipsPage, NrpsError)`
+- `fetch_differences_memberships_page(http_provider, differences_url, access_token) -> Result(MembershipsPage, NrpsError)`
 
 Compatibility:
-- Keep `fetch_memberships(...) -> Result(List(Membership), String)` as wrapper around options API with default behavior.
+- Keep `fetch_memberships(...)` as wrapper around options API with default behavior, but
+  return `Result(List(Membership), NrpsError)`.
 
 ## 4. Claim and Scope Validation Rules
 
@@ -135,15 +136,21 @@ If `query.url` is provided (next/differences continuation), use that URL directl
 - Provide convenience methods for consuming continuation links.
 
 ## 8. Error Taxonomy
-Preserve public `Result(_, String)` and standardize categories:
-- `nrps.claim.missing`
-- `nrps.claim.invalid`
-- `nrps.scope.insufficient`
-- `nrps.request.invalid_url`
-- `nrps.http.unexpected_status`
-- `nrps.decode.membership_container`
-- `nrps.decode.member`
-- `nrps.pagination.invalid_link_header`
+Use explicit NRPS error types for public APIs (for example `NrpsError`) rather than
+string identifiers.
+
+Recommended variants:
+- `ClaimMissing`
+- `ClaimInvalid`
+- `ScopeInsufficient`
+- `RequestInvalidUrl`
+- `HttpUnexpectedStatus`
+- `DecodeMembershipContainer`
+- `DecodeMember`
+- `PaginationInvalidLinkHeader`
+
+If string output is needed for logging/UI compatibility, provide a dedicated conversion
+function (for example `nrps_error_to_string`).
 
 ## 9. Runtime Flows
 

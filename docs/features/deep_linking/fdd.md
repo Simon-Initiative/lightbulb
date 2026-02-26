@@ -62,9 +62,9 @@ Gaps:
   - initially optional support for `File`, `Html`, `Image` can be staged, but include model hooks now
 
 ### 3.3 Builder APIs (additive)
-- `get_deep_linking_settings(claims) -> Result(DeepLinkingSettings, String)`
-- `build_response_jwt(request_claims, settings, items, options, active_jwk) -> Result(String, String)`
-- `build_response_form_post(deep_link_return_url, jwt) -> String`
+- `get_deep_linking_settings(claims) -> Result(DeepLinkingSettings, DeepLinkingError)`
+- `build_response_jwt(request_claims, settings, items, options, active_jwk) -> Result(String, DeepLinkingError)`
+- `build_response_form_post(deep_link_return_url, jwt) -> Result(String, DeepLinkingError)`
 - content item constructors:
   - `content_item.link(...)`
   - `content_item.lti_resource_link(...)`

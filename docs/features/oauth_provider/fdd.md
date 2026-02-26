@@ -37,9 +37,8 @@ Current gaps:
   - `scope: Option(String)` (or preserve String with fallback empty/requested scope)
 
 Compatibility direction:
-- Prefer additive API to avoid breaking existing users:
-  - keep existing `fetch_access_token(...) -> Result(AccessToken, String)`
-  - add enhanced variant (e.g., `fetch_access_token_detailed(...) -> Result(AccessToken, AccessTokenError)`)
+- Prefer explicit typed errors for public APIs:
+  - `fetch_access_token(...) -> Result(AccessToken, AccessTokenError)`
 
 ### 3.2 Error Types
 Add typed error representation in `src/lightbulb/services/access_token.gleam`:
@@ -51,7 +50,7 @@ Add typed error representation in `src/lightbulb/services/access_token.gleam`:
   - `DecodeError(reason: String)`
   - `AssertionBuildError(reason: String)`
 
-Provide string mapper for compatibility path.
+Provide a dedicated conversion helper when string output is required by logs/UI.
 
 ### 3.3 Provider Contract Evolution
 This feature owns provider-side contract changes that support core launch correctness:
@@ -150,16 +149,22 @@ If parse fails, return `HttpStatusError` with raw body.
 3. Update core launch flow to use context provider semantics.
 
 ## 7. Error Taxonomy
-Keep deterministic string categories in compatibility path:
-- `oauth.request.invalid_url`
-- `oauth.assertion.build_failed`
-- `oauth.http.transport_error`
-- `oauth.http.unexpected_status`
-- `oauth.error.invalid_client`
-- `oauth.error.invalid_scope`
-- `oauth.decode.invalid_token_response`
-- `provider.context.missing`
-- `provider.context.expired`
+Use explicit typed errors (`AccessTokenError` and related provider/context errors)
+rather than dot-separated string identifiers.
+
+Recommended `AccessTokenError` variants:
+- `RequestInvalidUrl`
+- `AssertionBuildFailed`
+- `HttpTransportError`
+- `HttpUnexpectedStatus`
+- `OAuthInvalidClient`
+- `OAuthInvalidScope`
+- `DecodeInvalidTokenResponse`
+- `ProviderContextMissing`
+- `ProviderContextExpired`
+
+If string output is needed for logging/UI compatibility, provide conversion helpers
+(for example `access_token_error_to_string`).
 
 ## 8. Testability Design
 

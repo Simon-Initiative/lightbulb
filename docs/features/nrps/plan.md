@@ -20,7 +20,7 @@
 
 ## Phase 3: Options-Based Fetch API
 - [ ] Add `MembershipsQuery` type (`role`, `limit`, `rlid`, optional direct `url`).
-- [ ] Implement `fetch_memberships_with_options(...) -> Result(MembershipsPage, String)`.
+- [ ] Implement `fetch_memberships_with_options(...) -> Result(MembershipsPage, NrpsError)`.
 - [ ] Keep `fetch_memberships(...)` wrapper for compatibility.
 - [ ] Update request construction logic:
   - [ ] no hardcoded `limit=1000`
@@ -39,7 +39,7 @@
 ## Phase 5: Scope and Availability Semantics
 - [ ] Add/adjust scope helper `can_read_memberships(claims)`.
 - [ ] Ensure `nrps_available` behavior aligns with claim + scope availability semantics.
-- [ ] Add failure paths for insufficient scope with explicit `nrps.scope.insufficient` errors.
+- [ ] Add failure paths for insufficient scope with explicit typed errors (for example `ScopeInsufficient`).
 
 ## Phase 6: Test Matrix and Conformance Coverage
 - [ ] Expand `test/lightbulb/services/nrps_test.gleam` with:
