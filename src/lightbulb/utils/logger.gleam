@@ -1,5 +1,5 @@
-import gleam/dynamic.{type Dynamic}
 import gleam/string
+import logging
 
 pub type Level {
   Emergency
@@ -12,23 +12,23 @@ pub type Level {
   Debug
 }
 
-/// Configure the Erlang logger to use the log level and output format that we
-/// want, rather than the more verbose Erlang default format.
-///
-@external(erlang, "lti_example_tool_ffi", "configure_logger_backend")
-pub fn configure_backend() -> Nil
+/// Configure the Erlang logger to use the logging package defaults.
+pub fn configure_backend() -> Nil {
+  logging.configure()
+}
 
-@external(erlang, "logger", "log")
-fn erlang_log(a: Level, b: String) -> Dynamic
+/// Reduce logger output to emergency-only level.
+/// Useful in tests to avoid expected-failure noise in output.
+pub fn configure_quiet() -> Nil {
+  logging.set_level(logging.Emergency)
+}
 
 pub fn log(level: Level, message: String) -> Nil {
-  erlang_log(level, message)
-  Nil
+  logging.log(to_logging_level(level), message)
 }
 
 pub fn log_meta(level: Level, message: String, meta: a) -> Nil {
-  erlang_log(level, message <> "\n" <> string.inspect(meta))
-  Nil
+  logging.log(to_logging_level(level), message <> "\n" <> string.inspect(meta))
 }
 
 pub fn info(message: String) -> Nil {
@@ -61,4 +61,17 @@ pub fn debug(message: String) -> Nil {
 
 pub fn debug_meta(message: String, meta: a) -> Nil {
   log_meta(Debug, message, meta)
+}
+
+fn to_logging_level(level: Level) -> logging.LogLevel {
+  case level {
+    Emergency -> logging.Emergency
+    Alert -> logging.Alert
+    Critical -> logging.Critical
+    Error -> logging.Error
+    Warning -> logging.Warning
+    Notice -> logging.Notice
+    Info -> logging.Info
+    Debug -> logging.Debug
+  }
 }

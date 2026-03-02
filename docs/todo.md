@@ -1,1 +1,0 @@
-- [ ] Cleanup test logs when running `gleam test`

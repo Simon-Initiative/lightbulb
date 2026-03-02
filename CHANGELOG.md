@@ -21,6 +21,8 @@ This changelog serves as release notes and is maintained as WIP until a release 
 - Provider composition helper for login context:
   - `providers/data_provider.LaunchContextProvider`
   - `providers/data_provider.from_parts/6`
+- Replaced custom internal logger FFI implementation with the `logging` (`v1.3.0`)
+  package while preserving `lightbulb/utils/logger` call sites.
 - AGS API expansion and hardening (target: `2.0.0`):
   - New typed AGS errors and string conversion helper:
     `services/ags.AgsError`, `services/ags.ags_error_to_string/1`
