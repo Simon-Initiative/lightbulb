@@ -48,7 +48,7 @@
 - [x] Add integration tests in `test/lightbulb/deep_linking_test.gleam`:
   - [x] launch claims -> settings decode -> item build -> response JWT
   - [x] response JWT -> form-post payload
-- [ ] Add coverage in `test/lightbulb/core_test.gleam` for deep-link message routing.
+- [x] Add coverage in `test/lightbulb/core_test.gleam` for deep-link message routing.
 - [x] Add optional example endpoint flow in README or example app for proof-mode runs.
 
 ## Phase 6: Certification Coverage and Documentation

@@ -7,6 +7,8 @@ import gleam/time/duration
 import gleam/time/timestamp
 import gleam/uri
 import gleeunit/should
+import lightbulb/deep_linking
+import lightbulb/deep_linking/settings
 import lightbulb/deployment
 import lightbulb/errors
 import lightbulb/jose
@@ -115,6 +117,43 @@ pub fn unsupported_message_type_failure_test() {
     fixture.state,
   )
   |> should.equal(Error(errors.MessageTypeUnsupported))
+
+  memory_provider.cleanup(fixture.memory)
+}
+
+pub fn deep_linking_message_type_success_test() {
+  let fixture = setup_fixture(option.None)
+
+  let claims =
+    base_claims(fixture)
+    |> dict.insert(
+      tool.message_type_claim,
+      dynamic.string(deep_linking.lti_message_type_deep_linking_request),
+    )
+    |> dict.insert(
+      settings.claim_deep_linking_settings,
+      deep_linking_settings_claim(fixture.target_link_uri),
+    )
+
+  tool.validate_message_type(claims)
+  |> should.be_ok()
+
+  memory_provider.cleanup(fixture.memory)
+}
+
+pub fn deep_linking_message_type_missing_settings_failure_test() {
+  let fixture = setup_fixture(option.None)
+
+  let claims =
+    base_claims(fixture)
+    |> dict.insert(
+      tool.message_type_claim,
+      dynamic.string(deep_linking.lti_message_type_deep_linking_request),
+    )
+    |> dict.delete(settings.claim_deep_linking_settings)
+
+  tool.validate_message_type(claims)
+  |> should.equal(Error(errors.JwtInvalidClaim))
 
   memory_provider.cleanup(fixture.memory)
 }
@@ -552,6 +591,23 @@ fn base_claims_with_audience(fixture: Fixture, aud: dynamic.Dynamic) {
       dynamic.list([
         dynamic.string("http://purl.imsglobal.org/vocab/lis/v2/membership#Learner"),
       ]),
+    ),
+  ])
+}
+
+fn deep_linking_settings_claim(return_url: String) -> dynamic.Dynamic {
+  dynamic.properties([
+    #(
+      dynamic.string("deep_link_return_url"),
+      dynamic.string(return_url),
+    ),
+    #(
+      dynamic.string("accept_types"),
+      dynamic.list([dynamic.string("ltiResourceLink"), dynamic.string("link")]),
+    ),
+    #(
+      dynamic.string("accept_presentation_document_targets"),
+      dynamic.list([dynamic.string("iframe")]),
     ),
   ])
 }
