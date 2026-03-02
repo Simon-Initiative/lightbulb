@@ -6,8 +6,6 @@
 /// without needing a database or external storage. It's also useful for testing
 /// and development purposes. It's important to note that this provider is not
 /// suitable for production use, as it does not persist data across restarts.
-import birl
-import birl/duration
 import gleam/dict
 import gleam/erlang/process.{type Subject}
 import gleam/list
@@ -15,6 +13,8 @@ import gleam/order.{Lt}
 import gleam/otp/actor.{type StartError}
 import gleam/pair
 import gleam/result
+import gleam/time/duration
+import gleam/time/timestamp
 import lightbulb/deployment.{type Deployment}
 import lightbulb/errors.{NonceExpired, NonceInvalid, NonceReplayed}
 import lightbulb/jwk.{type Jwk}
@@ -147,7 +147,10 @@ fn handle_message(state: State, message: Message) -> actor.Next(State, Message) 
 
     CreateNonce(reply_with) -> {
       let nonce =
-        Nonce(uuid.v4_string(), birl.now() |> birl.add(duration.minutes(5)))
+        Nonce(
+          uuid.v4_string(),
+          timestamp.system_time() |> timestamp.add(duration.minutes(5)),
+        )
 
       actor.send(reply_with, Ok(nonce))
       actor.continue(State(..state, nonces: [nonce, ..state.nonces]))
@@ -172,7 +175,7 @@ fn handle_message(state: State, message: Message) -> actor.Next(State, Message) 
 
           case maybe_nonce {
             Ok(nonce) -> {
-              case birl.compare(birl.now(), nonce.expires_at) {
+              case timestamp.compare(timestamp.system_time(), nonce.expires_at) {
                 Lt -> {
                   actor.send(reply_with, ValidNonce)
                   actor.continue(State(
@@ -220,11 +223,11 @@ fn handle_message(state: State, message: Message) -> actor.Next(State, Message) 
     }
 
     CleanupExpiredNonces -> {
-      let now = birl.now()
+      let now = timestamp.system_time()
 
       let nonces =
         list.filter(state.nonces, fn(nonce) {
-          case birl.compare(now, nonce.expires_at) {
+          case timestamp.compare(now, nonce.expires_at) {
             Lt -> True
             _ -> False
           }

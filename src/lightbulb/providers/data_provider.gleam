@@ -1,4 +1,4 @@
-import birl.{type Time}
+import gleam/time/timestamp.{type Timestamp}
 import lightbulb/deployment.{type Deployment}
 import lightbulb/errors.{type NonceError}
 import lightbulb/jwk.{type Jwk}
@@ -11,7 +11,7 @@ pub type LoginContext {
     target_link_uri: String,
     issuer: String,
     client_id: String,
-    expires_at: Time,
+    expires_at: Timestamp,
   )
 }
 

@@ -1,10 +1,10 @@
-import birl
-import birl/duration
 import gleam/dict
 import gleam/dynamic
 import gleam/list
 import gleam/option
 import gleam/string
+import gleam/time/duration
+import gleam/time/timestamp
 import gleam/uri
 import gleeunit/should
 import lightbulb/deployment
@@ -28,6 +28,10 @@ type Fixture {
     signing_jwk: dict.Dict(String, String),
     kid: String,
   )
+}
+
+fn unix_seconds(value: timestamp.Timestamp) -> Int {
+  timestamp.to_unix_seconds_and_nanoseconds(value).0
 }
 
 pub fn successful_resource_link_launch_test() {
@@ -265,7 +269,9 @@ pub fn expired_state_context_failure_test() {
       target_link_uri: fixture.target_link_uri,
       issuer: fixture.issuer,
       client_id: fixture.client_id,
-      expires_at: birl.now() |> birl.subtract(duration.minutes(10)),
+      expires_at:
+        timestamp.system_time()
+        |> timestamp.add(duration.minutes(-10)),
     ),
   )
 
@@ -310,7 +316,8 @@ pub fn expired_nonce_failure_test() {
     fixture.memory,
     nonce.Nonce(
       expired_nonce,
-      birl.now() |> birl.subtract(duration.minutes(10)),
+      timestamp.system_time()
+      |> timestamp.add(duration.minutes(-10)),
     ),
   )
 
@@ -345,7 +352,9 @@ pub fn replayed_nonce_failure_test() {
       target_link_uri: fixture.target_link_uri,
       issuer: fixture.issuer,
       client_id: fixture.client_id,
-      expires_at: birl.now() |> birl.add(duration.minutes(5)),
+      expires_at:
+        timestamp.system_time()
+        |> timestamp.add(duration.minutes(5)),
     ),
   )
 
@@ -504,9 +513,11 @@ fn base_claims(fixture: Fixture) {
 }
 
 fn base_claims_with_audience(fixture: Fixture, aud: dynamic.Dynamic) {
-  let now = birl.now()
-  let exp = birl.add(now, duration.minutes(5)) |> birl.to_unix()
-  let iat = birl.to_unix(now)
+  let now = timestamp.system_time()
+  let exp =
+    timestamp.add(now, duration.minutes(5))
+    |> unix_seconds
+  let iat = unix_seconds(now)
 
   dict.from_list([
     #("iss", dynamic.string(fixture.issuer)),

@@ -1,4 +1,3 @@
-import birl
 import gleam/bool
 import gleam/dict
 import gleam/int
@@ -6,6 +5,7 @@ import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string
+import gleam/time/timestamp
 import lightbulb/providers.{type Providers}
 import lightbulb/registration.{type Registration}
 import lightbulb/services/access_token.{
@@ -38,6 +38,10 @@ pub fn new() -> TokenCache {
 pub fn with_refresh_window(refresh_window_seconds: Int) -> TokenCache {
   let safe_refresh_window = int.max(refresh_window_seconds, 0)
   TokenCache(entries: dict.new(), refresh_window_seconds: safe_refresh_window)
+}
+
+fn unix_seconds(value: timestamp.Timestamp) -> Int {
+  timestamp.to_unix_seconds_and_nanoseconds(value).0
 }
 
 pub fn key(
@@ -90,7 +94,7 @@ pub fn fetch_access_token_with_cache(
   registration: Registration,
   scopes: List(String),
 ) -> Result(#(AccessToken, TokenCache), AccessTokenError) {
-  let now_unix = birl.now() |> birl.to_unix()
+  let now_unix = timestamp.system_time() |> unix_seconds
   let cache_key = key(registration.issuer, registration.client_id, scopes)
 
   case get(cache, cache_key, now_unix) {

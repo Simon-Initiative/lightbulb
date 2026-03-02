@@ -1,5 +1,3 @@
-import birl
-import birl/duration
 import gleam/bool
 import gleam/dict
 import gleam/dynamic
@@ -11,6 +9,8 @@ import gleam/json
 import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string
+import gleam/time/duration
+import gleam/time/timestamp
 import gleam/uri
 import lightbulb/jose
 import lightbulb/jwk.{type Jwk}
@@ -47,6 +47,10 @@ pub type AssertionOptions {
 
 pub fn default_assertion_options() -> AssertionOptions {
   AssertionOptions(audience: None, lifetime_seconds: default_assertion_lifetime_seconds)
+}
+
+fn unix_seconds(value: timestamp.Timestamp) -> Int {
+  timestamp.to_unix_seconds_and_nanoseconds(value).0
 }
 
 pub fn access_token_error_to_string(error: AccessTokenError) -> String {
@@ -147,7 +151,7 @@ pub fn build_client_assertion(
 
   let #(_, jwk_map) = jwk.to_map(active_jwk)
   let jti = uuid.v4_string()
-  let now = birl.now() |> birl.to_unix()
+  let now = timestamp.system_time() |> unix_seconds
 
   let jwt =
     dict.from_list([
@@ -157,9 +161,9 @@ pub fn build_client_assertion(
       #("iat", dynamic.int(now)),
       #(
         "exp",
-        birl.now()
-          |> birl.add(duration.seconds(lifetime_seconds))
-          |> birl.to_unix()
+        timestamp.system_time()
+          |> timestamp.add(duration.seconds(lifetime_seconds))
+          |> unix_seconds
           |> dynamic.int(),
       ),
       #("jti", dynamic.string(jti)),

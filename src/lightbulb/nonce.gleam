@@ -1,6 +1,6 @@
-import birl.{type Time}
+import gleam/time/timestamp.{type Timestamp}
 
 /// Represents a nonce used for security purposes, such as preventing replay attacks.
 pub type Nonce {
-  Nonce(nonce: String, expires_at: Time)
+  Nonce(nonce: String, expires_at: Timestamp)
 }

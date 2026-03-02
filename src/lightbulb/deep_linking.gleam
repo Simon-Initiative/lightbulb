@@ -1,5 +1,3 @@
-import birl
-import birl/duration
 import gleam/dict
 import gleam/dynamic
 import gleam/dynamic/decode
@@ -7,6 +5,8 @@ import gleam/list
 import gleam/option.{type Option}
 import gleam/result
 import gleam/string
+import gleam/time/duration
+import gleam/time/timestamp
 import gleam/uri
 import lightbulb/deep_linking/content_item.{type ContentItem}
 import lightbulb/deep_linking/settings.{type DeepLinkingSettings}
@@ -69,6 +69,10 @@ pub fn default_response_options() -> DeepLinkingResponseOptions {
   )
 }
 
+fn unix_seconds(value: timestamp.Timestamp) -> Int {
+  timestamp.to_unix_seconds_and_nanoseconds(value).0
+}
+
 /// Decodes deep-linking settings from validated launch claims.
 ///
 /// Returns:
@@ -110,12 +114,17 @@ pub fn build_response_jwt(
       ),
       #(claim_version, dynamic.string(lti_version)),
       #(claim_deployment_id, dynamic.string(deployment_id)),
-      #("iat", dynamic.int(birl.now() |> birl.to_unix())),
+      #(
+        "iat",
+        timestamp.system_time()
+        |> unix_seconds
+        |> dynamic.int,
+      ),
       #(
         "exp",
-        birl.now()
-          |> birl.add(duration.seconds(options.ttl_seconds))
-          |> birl.to_unix()
+        timestamp.system_time()
+          |> timestamp.add(duration.seconds(options.ttl_seconds))
+          |> unix_seconds
           |> dynamic.int(),
       ),
     ])

@@ -1,5 +1,3 @@
-import birl
-import birl/duration
 import gleam/bool
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
@@ -12,6 +10,8 @@ import gleam/list
 import gleam/order.{Gt, Lt}
 import gleam/result
 import gleam/string
+import gleam/time/duration
+import gleam/time/timestamp
 import gleam/uri.{query_to_string}
 import lightbulb/deep_linking
 import lightbulb/deep_linking/settings
@@ -104,7 +104,9 @@ pub fn oidc_login(
       target_link_uri: target_link_uri,
       issuer: issuer,
       client_id: client_id,
-      expires_at: birl.now() |> birl.add(duration.minutes(login_context_ttl_minutes)),
+      expires_at:
+        timestamp.system_time()
+        |> timestamp.add(duration.minutes(login_context_ttl_minutes)),
     )
 
   use _ <- result.try(
@@ -390,24 +392,23 @@ fn validate_deployment(
 fn validate_timestamps(claims: Claims) -> Result(Claims, CoreError) {
   use exp <- result.try(
     read_claim(claims, "exp", decode.int)
-    |> result.map(birl.from_unix),
+    |> result.map(timestamp.from_unix_seconds),
   )
   use iat <- result.try(
     read_claim(claims, "iat", decode.int)
-    |> result.map(birl.from_unix),
+    |> result.map(timestamp.from_unix_seconds),
   )
 
-  let now = birl.now()
-  let skew = duration.seconds(timestamp_skew_seconds)
-  let lower_bound = birl.subtract(now, skew)
-  let upper_bound = birl.add(now, skew)
+  let now = timestamp.system_time()
+  let lower_bound = timestamp.add(now, duration.seconds(-timestamp_skew_seconds))
+  let upper_bound = timestamp.add(now, duration.seconds(timestamp_skew_seconds))
 
   use <- bool.guard(
-    when: birl.compare(exp, lower_bound) == Lt,
+    when: timestamp.compare(exp, lower_bound) == Lt,
     return: Error(JwtExpired),
   )
   use <- bool.guard(
-    when: birl.compare(iat, upper_bound) == Gt,
+    when: timestamp.compare(iat, upper_bound) == Gt,
     return: Error(JwtInvalidClaim),
   )
 
@@ -415,12 +416,12 @@ fn validate_timestamps(claims: Claims) -> Result(Claims, CoreError) {
     Ok(nbf_dynamic) -> {
       use nbf <- result.try(
         decode.run(nbf_dynamic, decode.int)
-        |> result.map(birl.from_unix)
+        |> result.map(timestamp.from_unix_seconds)
         |> result.map_error(fn(_) { JwtInvalidClaim }),
       )
 
       use <- bool.guard(
-        when: birl.compare(nbf, upper_bound) == Gt,
+        when: timestamp.compare(nbf, upper_bound) == Gt,
         return: Error(JwtNotYetValid),
       )
 
@@ -462,7 +463,7 @@ fn validate_login_context(
   ) = context
 
   use <- bool.guard(
-    when: birl.compare(expires_at, birl.now()) != Gt,
+    when: timestamp.compare(expires_at, timestamp.system_time()) != Gt,
     return: Error(StateNotFound),
   )
   use <- bool.guard(

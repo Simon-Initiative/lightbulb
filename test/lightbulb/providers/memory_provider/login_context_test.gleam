@@ -1,6 +1,6 @@
-import birl
-import birl/duration
 import gleeunit/should
+import gleam/time/duration
+import gleam/time/timestamp
 import lightbulb/providers/data_provider.{LoginContext}
 import lightbulb/providers/memory_provider
 
@@ -13,7 +13,7 @@ pub fn login_context_round_trip_and_consume_test() {
       target_link_uri: "https://tool.example.com/launch",
       issuer: "https://platform.example.com",
       client_id: "client-123",
-      expires_at: birl.now() |> birl.add(duration.minutes(5)),
+      expires_at: timestamp.system_time() |> timestamp.add(duration.minutes(5)),
     )
 
   memory_provider.save_login_context(memory, context)

@@ -35,6 +35,8 @@ This changelog serves as release notes and is maintained as WIP until a release 
   errors.
 - OAuth client assertion defaults are hardened with short lifetime defaults (5 minutes)
   and configurable audience selection.
+- Replaced the `birl` dependency with direct use of `gleam/time` (`duration` and
+  `timestamp`) for nonce/login-context expiry and JWT timestamp handling.
 
 ### Breaking Changes
 
