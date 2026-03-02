@@ -34,8 +34,11 @@ This matrix maps implemented certification objectives to automated tests in this
 
 | Objective | Description | Evidence |
 | --- | --- | --- |
-| 5.3.x Service Token Scope Interop | NRPS scope participates in OAuth client-credentials token request and response compatibility | `test/lightbulb/services/access_token_test.gleam::access_token_success_and_request_shape_test`, `tolerant_decode_missing_optional_fields_test` |
-| NRPS Membership Retrieval | Membership container retrieval and decode with bearer auth | `test/lightbulb/services/nrps_test.gleam::fetch_memberships_test` |
+| 5.3.1 NRPS claim URL handling | NRPS claim decode from canonical claim URL with required fields | `test/lightbulb/services/nrps_test.gleam::get_nrps_claim_minimal_valid_test`, `get_nrps_claim_invalid_missing_service_versions_test` |
+| 5.3.2 Scope request behavior | Read-memberships scope gating helper and insufficient-scope guard | `test/lightbulb/services/nrps_test.gleam::scope_availability_helpers_test`, `require_can_read_memberships_failure_test` |
+| 5.3.3 Access token handling for NRPS calls | OAuth scope interop + bearer token header usage in NRPS requests | `test/lightbulb/services/access_token_test.gleam::access_token_success_and_request_shape_test`, `tolerant_decode_missing_optional_fields_test`, `test/lightbulb/services/nrps_paging_test.gleam::access_token_header_for_nrps_calls_test` |
+| 5.3.4 Members retrieval behavior | Membership container retrieval with tolerant member decode and pagination metadata fallback | `test/lightbulb/services/nrps_test.gleam::fetch_memberships_test`, `minimal_member_decode_test`, `expanded_member_decode_test`, `missing_required_keys_failure_test`, `test/lightbulb/services/nrps_paging_test.gleam::malformed_link_header_fallback_behavior_test` |
+| 5.3.5 Role-specific members retrieval behavior | Role/limit/rlid query options and continuation-link flows (`next`, `differences`) | `test/lightbulb/services/nrps_test.gleam::options_query_serialization_test`, `test/lightbulb/services/nrps_paging_test.gleam::next_link_continuation_flow_test`, `differences_link_continuation_flow_test` |
 
 ## Deep Linking 2.0
 

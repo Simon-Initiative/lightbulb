@@ -175,6 +175,59 @@ Compatibility note:
 - `LineItem` includes AGS optional fields:
   `resource_link_id`, `tag`, `start_date_time`, `end_date_time`, `grades_released`.
 
+### NRPS (Names and Roles)
+
+`lightbulb/services/nrps` now provides typed NRPS APIs for claim decode,
+scope checks, filtered membership fetches, and pagination links.
+
+Key APIs:
+- `get_nrps_claim/1 -> Result(NrpsClaim, NrpsError)`
+- `can_read_memberships/1` and `require_can_read_memberships/1`
+- `fetch_memberships_with_options/4 -> Result(MembershipsPage, NrpsError)`
+- `fetch_next_memberships_page/3`
+- `fetch_differences_memberships_page/3`
+
+`fetch_memberships/3` remains as a compatibility wrapper and returns only
+`List(Membership)` (it calls the options API with `default_memberships_query/0`).
+
+```gleam
+import gleam/option
+import gleam/result
+import lightbulb/services/nrps
+
+fn load_members(http_provider, claims, access_token) {
+  use <- result.try(nrps.require_can_read_memberships(claims))
+  use service_url <- result.try(nrps.get_membership_service_url(claims))
+
+  let query =
+    nrps.MembershipsQuery(
+      ..nrps.default_memberships_query(),
+      role: option.Some("Instructor"),
+      limit: option.Some(50),
+    )
+
+  use page <- result.try(
+    nrps.fetch_memberships_with_options(
+      http_provider,
+      service_url,
+      query,
+      access_token,
+    ),
+  )
+
+  let nrps.MembershipsPage(members: members, links: links) = page
+
+  // Follow `links.next` with `fetch_next_memberships_page/3` or
+  // `links.differences` with `fetch_differences_memberships_page/3`.
+  Ok(#(members, links))
+}
+```
+
+Migration note:
+- `Membership` now requires only `user_id` and `roles`; profile fields are optional:
+  `status`, `name`, `given_name`, `family_name`, `middle_name`, `email`,
+  `picture`, `lis_person_sourcedid`.
+
 ### Deep Linking
 
 Deep-link launches can be decoded from validated launch claims, then answered with a

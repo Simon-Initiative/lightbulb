@@ -9,6 +9,7 @@ pub fn parse_link_header_test() {
   |> should.equal(
     Ok(link_header.PageLinks(
       next: Some("https://example.com/items?page=2"),
+      differences: None,
       prev: Some("https://example.com/items?page=1"),
       first: Some("https://example.com/items?page=1"),
       last: Some("https://example.com/items?page=4"),
@@ -29,6 +30,7 @@ pub fn empty_links_default_test() {
   link_header.empty_page_links()
   |> should.equal(link_header.PageLinks(
     next: None,
+    differences: None,
     prev: None,
     first: None,
     last: None,

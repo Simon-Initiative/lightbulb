@@ -239,6 +239,7 @@ pub fn list_line_items_paging_test() {
   links
   |> should.equal(PageLinks(
     next: option.Some("https://lms.example.com/context/2923/lineitems?page=2"),
+    differences: option.None,
     prev: option.None,
     first: option.Some("https://lms.example.com/context/2923/lineitems?page=1"),
     last: option.None,
@@ -367,6 +368,7 @@ pub fn list_results_test() {
       ],
       links: PageLinks(
         next: option.None,
+        differences: option.None,
         prev: option.None,
         first: option.None,
         last: option.None,
@@ -472,6 +474,7 @@ pub fn malformed_link_header_fallback_test() {
       items: [],
       links: PageLinks(
         next: option.None,
+        differences: option.None,
         prev: option.None,
         first: option.None,
         last: option.None,

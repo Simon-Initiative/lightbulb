@@ -38,6 +38,21 @@ This changelog serves as release notes and is maintained as WIP until a release 
     `can_*` and `require_can_*` predicates for line items/scores/results
   - Added AGS readonly line-item scope constant:
     `lineitem_readonly_scope_url`
+- NRPS API expansion and hardening (target: `2.0.0`):
+  - New typed NRPS errors and conversion helper:
+    `services/nrps.NrpsError`, `services/nrps.nrps_error_to_string/1`
+  - Spec-aligned NRPS claim decoding:
+    `services/nrps.get_nrps_claim/1` now requires
+    `context_memberships_url` and `service_versions`
+  - Scope helpers:
+    `can_read_memberships/1`, `require_can_read_memberships/1`
+  - Options-based membership fetch and paging support:
+    `MembershipsQuery`, `MembershipsPage`,
+    `fetch_memberships_with_options/4`,
+    `fetch_next_memberships_page/3`,
+    `fetch_differences_memberships_page/3`
+  - Compatibility wrapper retained:
+    `fetch_memberships/3` still returns `List(Membership)` via default options.
 
 ### Bug Fixes
 
@@ -58,6 +73,8 @@ This changelog serves as release notes and is maintained as WIP until a release 
   sends the line-item-container `Accept` header for score POST requests.
 - `grade_passback_available/1` now reflects score-posting capability (`scope/score`)
   instead of results-read capability.
+- NRPS membership decode now tolerates minimal valid member payloads and no longer
+  requires non-normative claim fields (`errors`, `validation_context`).
 
 ### Breaking Changes
 
@@ -104,6 +121,16 @@ This changelog serves as release notes and is maintained as WIP until a release 
     at process boundaries.
   - If you construct `LineItem` directly, add the new optional fields with
     `option.None` unless needed.
+- Migration for NRPS callers:
+  - `fetch_memberships/3` now returns `Result(List(Membership), NrpsError)`
+    (typed errors instead of string errors).
+  - Pattern-match on `NrpsError`, or convert at process boundaries with
+    `nrps_error_to_string/1`.
+  - If you construct `Membership` directly, use the new shape:
+    required: `user_id`, `roles`; optional: `status`, `name`, `given_name`,
+    `family_name`, `middle_name`, `email`, `picture`, `lis_person_sourcedid`.
+  - For filtering/paging flows, move from `fetch_memberships/3` to
+    `fetch_memberships_with_options/4` and continuation helpers.
 
 ## 1.0.0
 
