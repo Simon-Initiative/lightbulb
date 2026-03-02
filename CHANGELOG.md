@@ -21,6 +21,21 @@ This changelog serves as release notes and is maintained as WIP until a release 
 - Provider composition helper for login context:
   - `providers/data_provider.LaunchContextProvider`
   - `providers/data_provider.from_parts/6`
+- AGS API expansion and hardening (target: `2.0.0`):
+  - New typed AGS errors and string conversion helper:
+    `services/ags.AgsError`, `services/ags.ags_error_to_string/1`
+  - Full line item service coverage:
+    `get_line_item/3`, `list_line_items/4`, `update_line_item/3`,
+    `delete_line_item/3`, `create_line_item/6`,
+    `fetch_or_create_line_item/7`
+  - Results service support:
+    `list_results/4` with `ResultsQuery`
+  - Paging metadata support:
+    `http/link_header` parser and `services/ags.Paged(a)` responses
+  - Scope helpers and guards:
+    `can_*` and `require_can_*` predicates for line items/scores/results
+  - Added AGS readonly line-item scope constant:
+    `lineitem_readonly_scope_url`
 
 ### Bug Fixes
 
@@ -37,6 +52,10 @@ This changelog serves as release notes and is maintained as WIP until a release 
   and configurable audience selection.
 - Replaced the `birl` dependency with direct use of `gleam/time` (`duration` and
   `timestamp`) for nonce/login-context expiry and JWT timestamp handling.
+- AGS score posting now accepts `200/201/202/204` success statuses and no longer
+  sends the line-item-container `Accept` header for score POST requests.
+- `grade_passback_available/1` now reflects score-posting capability (`scope/score`)
+  instead of results-read capability.
 
 ### Breaking Changes
 
@@ -65,6 +84,9 @@ This changelog serves as release notes and is maintained as WIP until a release 
   and `lightbulb/errors.{nonce_error_to_string}`.
 - For deep-linking user-facing messages, use
   `lightbulb/errors.{deep_linking_error_to_string}`.
+- AGS `LineItem` constructor now includes additional optional AGS fields:
+  `resource_link_id`, `tag`, `start_date_time`, `end_date_time`,
+  `grades_released`.
 - Migration for OAuth callers:
   - Existing `fetch_access_token/3` remains supported.
   - Prefer `fetch_access_token_typed/3` for structured handling and map to strings only
@@ -73,6 +95,13 @@ This changelog serves as release notes and is maintained as WIP until a release 
     `fetch_access_token_with_options/4`.
   - To reduce token endpoint traffic, adopt `services/access_token_cache` and route
     service-token fetches through `fetch_access_token_with_cache/4`.
+- Migration for AGS callers:
+  - AGS APIs return typed errors (`AgsError`) and no longer provide
+    string-error compatibility wrappers.
+  - Pattern-match on `AgsError`, or convert with `ags_error_to_string/1`
+    at process boundaries.
+  - If you construct `LineItem` directly, add the new optional fields with
+    `option.None` unless needed.
 
 ## 1.0.0
 

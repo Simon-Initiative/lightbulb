@@ -20,8 +20,15 @@ This matrix maps implemented certification objectives to automated tests in this
 
 | Objective | Description | Evidence |
 | --- | --- | --- |
-| 5.4.x Service Token Scope Interop | AGS scope set is sent in OAuth client-credentials token request and tolerated in response handling | `test/lightbulb/services/access_token_test.gleam::access_token_success_and_request_shape_test`, `tolerant_decode_missing_optional_fields_test` |
-| AGS Score and Line Item Calls | AGS request methods and endpoint usage with bearer auth | `test/lightbulb/services/ags_test.gleam::post_score_test` |
+| 5.4.1 AGS claim availability | Launch claim decode and AGS availability checks | `test/lightbulb/services/ags_test.gleam::scope_helpers_test` |
+| 5.4.2 AGS endpoint claim handling | AGS endpoint claim parsing (`lineitem`, `lineitems`) and scope extraction | `src/lightbulb/services/ags.gleam::get_lti_ags_claim/1`, `test/lightbulb/services/ags_test.gleam::scope_helpers_test` |
+| 5.4.3 Access token scope request behavior | AGS scopes included in OAuth client-credentials request | `test/lightbulb/services/access_token_test.gleam::access_token_success_and_request_shape_test` |
+| 5.4.4 Access token retrieval behavior for AGS calls | OAuth token retrieval decode/error handling used by AGS service calls | `test/lightbulb/services/access_token_test.gleam::tolerant_decode_missing_optional_fields_test`, `oauth_error_mapping_test`, `non_json_error_body_maps_to_http_status_error_test` |
+| 5.4.5 Line item create behavior | AGS line item creation request/response | `test/lightbulb/services/ags_test.gleam::create_line_item_test` |
+| 5.4.6 Line item retrieval behavior | AGS line item get/list/fetch-or-create and paging behavior | `test/lightbulb/services/ags_test.gleam::get_line_item_test`, `list_line_items_paging_test`, `fetch_or_create_line_item_existing_test` |
+| 5.4.7 Score publish behavior | AGS score publish request and accepted status handling | `test/lightbulb/services/ags_test.gleam::post_score_test` |
+| 5.4.8 Result retrieval behavior | AGS results list URL derivation, filters, payload decode | `test/lightbulb/services/ags_test.gleam::list_results_test` |
+| AGS negative-path coverage | Invalid payload decode, insufficient scope, malformed Link fallback | `test/lightbulb/services/ags_test.gleam::invalid_line_item_payload_test`, `invalid_result_payload_test`, `missing_scope_guard_test`, `malformed_link_header_fallback_test`, `test/lightbulb/services/ags_link_header_test.gleam::malformed_link_header_test` |
 
 ## NRPS
 
