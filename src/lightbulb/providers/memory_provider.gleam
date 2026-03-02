@@ -21,8 +21,17 @@ import lightbulb/jwk.{type Jwk}
 import lightbulb/nonce.{type Nonce, Nonce}
 import lightbulb/providers/data_provider.{
   type DataProvider,
+  type LaunchContextProvider,
   type LoginContext,
-  DataProvider,
+  type ProviderError,
+  LaunchContextInvalid,
+  LaunchContextNotFound,
+  LaunchContextProvider,
+  ProviderActiveJwkNotFound,
+  ProviderCreateNonceFailed,
+  ProviderDeploymentNotFound,
+  ProviderRegistrationNotFound,
+  from_parts,
 }
 import lightbulb/providers/memory_provider/tables.{type Table}
 import lightbulb/registration.{type Registration}
@@ -329,14 +338,30 @@ pub fn cleanup(actor) {
   process.send(actor, Shutdown)
 }
 
-pub fn data_provider(memory_provider) -> Result(DataProvider, String) {
-  Ok(
-    DataProvider(
-      create_nonce: fn() {
-        create_nonce(memory_provider)
-        |> result.replace_error("Failed to create nonce")
+pub fn data_provider(memory_provider) -> Result(DataProvider, ProviderError) {
+  let launch_context_provider: LaunchContextProvider =
+    LaunchContextProvider(
+      save_login_context: fn(context) {
+        save_login_context(memory_provider, context)
+        |> result.replace_error(LaunchContextInvalid)
       },
-      validate_nonce: fn(nonce) {
+      get_login_context: fn(state_key) {
+        get_login_context(memory_provider, state_key)
+        |> result.replace_error(LaunchContextNotFound)
+      },
+      consume_login_context: fn(state_key) {
+        consume_login_context(memory_provider, state_key)
+        |> result.replace_error(LaunchContextNotFound)
+      },
+    )
+
+  Ok(
+    from_parts(
+      fn() {
+        create_nonce(memory_provider)
+        |> result.replace_error(ProviderCreateNonceFailed)
+      },
+      fn(nonce) {
         case validate_nonce_detailed(memory_provider, nonce) {
           ValidNonce -> Ok(Nil)
           ExpiredNonce -> Error(NonceExpired)
@@ -344,31 +369,20 @@ pub fn data_provider(memory_provider) -> Result(DataProvider, String) {
           InvalidNonce -> Error(NonceInvalid)
         }
       },
-      save_login_context: fn(context) {
-        save_login_context(memory_provider, context)
-        |> result.replace_error("core.state.invalid")
-      },
-      get_login_context: fn(state_key) {
-        get_login_context(memory_provider, state_key)
-        |> result.replace_error("core.state.not_found")
-      },
-      consume_login_context: fn(state_key) {
-        consume_login_context(memory_provider, state_key)
-        |> result.replace_error("core.state.not_found")
-      },
-      get_registration: fn(issuer, client_id) {
+      launch_context_provider,
+      fn(issuer, client_id) {
         get_registration_by(memory_provider, issuer, client_id)
         |> result.map(pair.second)
-        |> result.replace_error("Failed to get registration")
+        |> result.replace_error(ProviderRegistrationNotFound)
       },
-      get_deployment: fn(issuer, client_id, deployment_id) {
+      fn(issuer, client_id, deployment_id) {
         get_deployment(memory_provider, issuer, client_id, deployment_id)
         |> result.map(pair.second)
-        |> result.replace_error("Failed to get deployment")
+        |> result.replace_error(ProviderDeploymentNotFound)
       },
-      get_active_jwk: fn() {
+      fn() {
         get_active_jwk(memory_provider)
-        |> result.replace_error("Failed to get active JWK")
+        |> result.replace_error(ProviderActiveJwkNotFound)
       },
     ),
   )

@@ -1,60 +1,60 @@
 # Implementation Plan: oauth_provider
 
 ## Phase 1: Token Response Tolerance and Typed Errors
-- [ ] Add typed token error model (`AccessTokenError`) in `src/lightbulb/services/access_token.gleam`.
-- [ ] Add tolerant token success decoder:
-  - [ ] required: `access_token`, `token_type`
-  - [ ] optional: `expires_in`, `scope`
-- [ ] Add OAuth error decoder for non-2xx responses:
-  - [ ] `error`
-  - [ ] `error_description`
-  - [ ] `error_uri`
-- [ ] Add compatibility mapping from typed errors to existing string-return API.
-- [ ] Expand tests in `test/lightbulb/services/access_token_test.gleam` for tolerant and error variants.
+- [x] Add typed token error model (`AccessTokenError`) in `src/lightbulb/services/access_token.gleam`.
+- [x] Add tolerant token success decoder:
+  - [x] required: `access_token`, `token_type`
+  - [x] optional: `expires_in`, `scope`
+- [x] Add OAuth error decoder for non-2xx responses:
+  - [x] `error`
+  - [x] `error_description`
+  - [x] `error_uri`
+- [x] Add compatibility mapping from typed errors to existing string-return API.
+- [x] Expand tests in `test/lightbulb/services/access_token_test.gleam` for tolerant and error variants.
 
 ## Phase 2: Assertion Audience and Lifetime Hardening
-- [ ] Add explicit audience source selection strategy:
-  - [ ] use discovered/registered authorization server when present
-  - [ ] fallback to token endpoint
-- [ ] Shorten client assertion lifetime to safer default (configurable).
-- [ ] Add tests for assertion claims (`iss`, `sub`, `aud`, `iat`, `exp`, `jti`, `kid`).
-- [ ] Ensure errors for assertion generation failures are explicit and categorized.
+- [x] Add explicit audience source selection strategy:
+  - [x] use discovered/registered authorization server when present
+  - [x] fallback to token endpoint
+- [x] Shorten client assertion lifetime to safer default (configurable).
+- [x] Add tests for assertion claims (`iss`, `sub`, `aud`, `iat`, `exp`, `jti`, `kid`).
+- [x] Ensure errors for assertion generation failures are explicit and categorized.
 
 ## Phase 3: Provider Contract Evolution for Core Integration
-- [ ] Finalize approach:
-  - [ ] extend `DataProvider`, or
-  - [ ] add new `LaunchContextProvider` and compose it
-- [ ] Implement provider-side context persistence/retrieval semantics in memory provider.
-- [ ] Add adapter constructors to preserve existing external provider integrations where possible.
-- [ ] Wire updated provider usage into core launch flow in `src/lightbulb/tool.gleam`.
-- [ ] Add provider migration notes for custom provider implementers.
+- [x] Finalize approach:
+  - [x] extend `DataProvider`, or
+  - [x] add new `LaunchContextProvider` and compose it
+- [x] Implement provider-side context persistence/retrieval semantics in memory provider.
+- [x] Add adapter constructors to preserve existing external provider integrations where possible.
+- [x] Wire updated provider usage into core launch flow in `src/lightbulb/tool.gleam`.
+- [x] Add provider migration notes for custom provider implementers.
 
 ## Phase 4: Optional Token Cache Utility
-- [ ] Decide inclusion: built-in path vs opt-in helper module.
-- [ ] If included, add cache types and interface:
-  - [ ] key by issuer/client/scope set
-  - [ ] staleness window before expiry
-- [ ] Add fetch-with-cache helper that wraps `fetch_access_token`.
-- [ ] Add unit tests for cache hit/miss/stale/refresh behavior.
+- [x] Decide inclusion: built-in path vs opt-in helper module.
+- [x] If included, add cache types and interface:
+  - [x] key by issuer/client/scope set
+  - [x] staleness window before expiry
+- [x] Add fetch-with-cache helper that wraps `fetch_access_token`.
+- [x] Add unit tests for cache hit/miss/stale/refresh behavior.
 
 ## Phase 5: Test Matrix and Conformance Mapping
-- [ ] Add/expand integration tests for:
-  - [ ] token request body and headers
-  - [ ] non-2xx OAuth error response mapping
-  - [ ] provider context semantics required by core
-- [ ] Map tests to certification-relevant rows in:
-  - [ ] Core section mappings
-  - [ ] AGS section mappings
-  - [ ] NRPS section mappings
-- [ ] Update `docs/complete_lti_support/conformance_matrix.md` with oauth/provider coverage links.
+- [x] Add/expand integration tests for:
+  - [x] token request body and headers
+  - [x] non-2xx OAuth error response mapping
+  - [x] provider context semantics required by core
+- [x] Map tests to certification-relevant rows in:
+  - [x] Core section mappings
+  - [x] AGS section mappings
+  - [x] NRPS section mappings
+- [x] Update `docs/complete_lti_support/conformance_matrix.md` with oauth/provider coverage links.
 
 ## Phase 6: Documentation and Rollout
-- [ ] Update README/service docs for:
-  - [ ] typed token error behavior
-  - [ ] optional cache utility usage
-  - [ ] provider contract changes/adapters
-- [ ] Provide migration guide snippets for users with custom providers.
-- [ ] Confirm backward compatibility strategy and deprecation path (if any) is documented.
+- [x] Update README/service docs for:
+  - [x] typed token error behavior
+  - [x] optional cache utility usage
+  - [x] provider contract changes/adapters
+- [x] Provide migration guide snippets for users with custom providers.
+- [x] Confirm backward compatibility strategy and deprecation path (if any) is documented.
 
 ## Cross-Feature Dependencies
 - `core`: provider contract changes for launch context/state/nonce are consumed directly by core launch validation flow.
@@ -75,9 +75,9 @@
 - `README.md`
 
 ## Definition of Done
-- [ ] Token decode is tolerant and standards-aligned.
-- [ ] OAuth error responses are parsed and surfaced with deterministic categories.
-- [ ] Assertion audience and TTL behavior are hardened and tested.
-- [ ] Provider evolution for core context semantics is implemented with migration path.
-- [ ] Optional token cache decision is implemented or explicitly deferred with rationale.
-- [ ] Certification mappings and docs are updated.
+- [x] Token decode is tolerant and standards-aligned.
+- [x] OAuth error responses are parsed and surfaced with deterministic categories.
+- [x] Assertion audience and TTL behavior are hardened and tested.
+- [x] Provider evolution for core context semantics is implemented with migration path.
+- [x] Optional token cache decision is implemented or explicitly deferred with rationale.
+- [x] Certification mappings and docs are updated.

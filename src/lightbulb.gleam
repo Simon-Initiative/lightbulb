@@ -9,6 +9,7 @@
 //// - AGS (Assignments and Grades): `lightbulb/services/ags`
 //// - NRPS (Names and Roles): `lightbulb/services/nrps`
 //// - OAuth service access tokens: `lightbulb/services/access_token`
+//// - Optional OAuth token cache helpers: `lightbulb/services/access_token_cache`
 //// - Provider interfaces: `lightbulb/providers/data_provider`,
 ////   `lightbulb/providers/http_provider`
 ////
@@ -22,4 +23,3 @@
 ////    - Deep-link launches: decode settings and return deep-link response JWT.
 //// 5. For service calls, fetch access tokens via
 ////    `services/access_token.fetch_access_token`.
-
