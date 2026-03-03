@@ -53,6 +53,18 @@ This changelog serves as release notes and is maintained as WIP until a release 
     `fetch_differences_memberships_page/3`
   - Compatibility wrapper retained:
     `fetch_memberships/3` still returns `List(Membership)` via default options.
+- Certification governance package (target: `2.0.0`):
+  - Added schema-driven conformance matrix:
+    `docs/complete_lti_support/conformance_matrix.md`
+  - Added certification runbook:
+    `docs/complete_lti_support/certification_runbook.md`
+  - Added evidence package layout and dry-run records under:
+    `docs/complete_lti_support/evidence/`
+  - Added matrix lint automation:
+    `scripts/lint_conformance_matrix.sh`
+  - Added conformance-focused test modules under:
+    `test/lightbulb/conformance/`
+  - CI now enforces matrix lint in `.github/workflows/test.yml`.
 
 ### Bug Fixes
 
@@ -131,6 +143,13 @@ This changelog serves as release notes and is maintained as WIP until a release 
     `family_name`, `middle_name`, `email`, `picture`, `lis_person_sourcedid`.
   - For filtering/paging flows, move from `fetch_memberships/3` to
     `fetch_memberships_with_options/4` and continuation helpers.
+- Migration for maintainers (certification workflow):
+  - Run `scripts/lint_conformance_matrix.sh` before `gleam test`.
+  - Keep requirement rows and test/evidence refs current in
+    `docs/complete_lti_support/conformance_matrix.md`.
+  - Capture dated evidence artifacts in
+    `docs/complete_lti_support/evidence/` and update
+    `last_verified_date` on affected rows.
 
 ## 1.0.0
 

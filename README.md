@@ -135,6 +135,19 @@ Further documentation can be found at <https://hexdocs.pm/lightbulb>.
 
 For API changes across versions, see [`CHANGELOG.md`](./CHANGELOG.md).
 
+### Certification Readiness
+
+- Conformance matrix: `docs/complete_lti_support/conformance_matrix.md`
+- Runbook: `docs/complete_lti_support/certification_runbook.md`
+- Evidence package: `docs/complete_lti_support/evidence/`
+
+Maintainer workflow for certification artifacts:
+
+1. Update conformance rows when implementing or changing behavior.
+2. Run `scripts/lint_conformance_matrix.sh`.
+3. Run `gleam test`.
+4. Refresh evidence files and `last_verified_date` for impacted rows.
+
 ### OAuth Service Tokens
 
 `lightbulb/services/access_token` now provides both:
