@@ -17,7 +17,7 @@ pub type Membership {
   )
 }
 
-/// Converts a `Membership` to a JSON representation.
+/// Decodes an NRPS membership object.
 pub fn decoder() {
   use user_id <- decode.field("user_id", decode.string)
   use roles <- decode.field("roles", decode.list(decode.string))

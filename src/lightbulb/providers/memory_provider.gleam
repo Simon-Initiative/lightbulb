@@ -309,6 +309,7 @@ fn handle_message(state: State, message: Message) -> actor.Next(State, Message) 
   }
 }
 
+/// Starts the in-memory provider actor process.
 pub fn start() -> Result(MemoryProvider, StartError) {
   let init = fn(self) {
     let state =
@@ -338,10 +339,12 @@ pub fn start() -> Result(MemoryProvider, StartError) {
   |> result.map(fn(started) { started.data })
 }
 
+/// Stops the in-memory provider actor process.
 pub fn cleanup(actor) {
   process.send(actor, Shutdown)
 }
 
+/// Builds a `DataProvider` adapter backed by the memory provider actor.
 pub fn data_provider(memory_provider) -> Result(DataProvider, ProviderError) {
   let launch_context_provider: LaunchContextProvider =
     LaunchContextProvider(
@@ -392,22 +395,27 @@ pub fn data_provider(memory_provider) -> Result(DataProvider, ProviderError) {
   )
 }
 
+/// Returns the active JWK.
 pub fn get_active_jwk(actor) {
   process.call(actor, call_timeout, GetActiveJwk)
 }
 
+/// Returns all stored JWKs.
 pub fn get_all_jwks(actor) {
   process.call(actor, call_timeout, GetAllJwks)
 }
 
+/// Inserts a JWK into storage.
 pub fn create_jwk(actor, jwk) {
   process.send(actor, CreateJwk(jwk))
 }
 
+/// Creates and stores a fresh nonce.
 pub fn create_nonce(actor) {
   process.call(actor, call_timeout, CreateNonce)
 }
 
+/// Inserts a provided nonce into storage.
 pub fn insert_nonce(actor, nonce: Nonce) {
   process.send(actor, InsertNonce(nonce))
 }
@@ -416,6 +424,7 @@ fn validate_nonce_detailed(actor, value: String) {
   process.call(actor, call_timeout, ValidateNonce(value, _))
 }
 
+/// Validates and consumes a nonce value.
 pub fn validate_nonce(actor, value) {
   case validate_nonce_detailed(actor, value) {
     ValidNonce -> Ok(Nil)
@@ -423,48 +432,59 @@ pub fn validate_nonce(actor, value) {
   }
 }
 
+/// Saves login context under its `state` key.
 pub fn save_login_context(actor, context: LoginContext) {
   process.call(actor, call_timeout, SaveLoginContext(context, _))
 }
 
+/// Returns login context by `state` key.
 pub fn get_login_context(actor, state_key: String) {
   process.call(actor, call_timeout, GetLoginContext(state_key, _))
 }
 
+/// Consumes and removes login context by `state` key.
 pub fn consume_login_context(actor, state_key: String) {
   process.call(actor, call_timeout, ConsumeLoginContext(state_key, _))
 }
 
+/// Removes expired nonces from storage.
 pub fn cleanup_expired_nonces(actor) {
   process.send(actor, CleanupExpiredNonces)
 }
 
+/// Creates a registration record.
 pub fn create_registration(actor, registration) {
   process.call(actor, call_timeout, CreateRegistration(registration, _))
 }
 
+/// Lists all registration records.
 pub fn list_registrations(actor) {
   process.call(actor, call_timeout, GetAllRegistrations)
 }
 
+/// Returns a registration by numeric id.
 pub fn get_registration(actor, id) {
   process.call(actor, call_timeout, GetRegistration(id, _))
 }
 
+/// Returns a registration by issuer/client pair.
 pub fn get_registration_by(actor, issuer, client_id) {
   process.call(actor, call_timeout, GetRegistrationBy(issuer, client_id, _))
 }
 
+/// Deletes a registration by numeric id.
 pub fn delete_registration(actor, id) {
   process.send(actor, DeleteRegistration(id))
 
   Ok(id)
 }
 
+/// Creates a deployment record.
 pub fn create_deployment(actor, deployment) {
   process.call(actor, call_timeout, CreateDeployment(deployment, _))
 }
 
+/// Returns a deployment by issuer/client/deployment id.
 pub fn get_deployment(actor, issuer, client_id, deployment_id) {
   process.call(actor, call_timeout, GetDeployment(
     issuer,

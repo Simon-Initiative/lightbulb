@@ -18,14 +18,17 @@ pub type PageLinks {
   )
 }
 
+/// Returns an empty set of pagination links.
 pub fn empty_page_links() -> PageLinks {
   PageLinks(next: None, differences: None, prev: None, first: None, last: None)
 }
 
+/// Parses a raw HTTP `Link` header into normalized page relations.
 pub fn parse(header: String) -> Result(PageLinks, LinkHeaderError) {
   parse_segments(string.split(header, ","), empty_page_links())
 }
 
+/// Converts link-header parsing errors to human-readable messages.
 pub fn link_header_error_to_string(error: LinkHeaderError) -> String {
   case error {
     InvalidLinkHeader(reason) -> reason

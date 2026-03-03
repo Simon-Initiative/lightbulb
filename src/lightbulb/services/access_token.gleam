@@ -45,6 +45,7 @@ pub type AssertionOptions {
   AssertionOptions(audience: Option(String), lifetime_seconds: Int)
 }
 
+/// Returns default client-assertion options.
 pub fn default_assertion_options() -> AssertionOptions {
   AssertionOptions(
     audience: None,
@@ -56,6 +57,7 @@ fn unix_seconds(value: timestamp.Timestamp) -> Int {
   timestamp.to_unix_seconds_and_nanoseconds(value).0
 }
 
+/// Converts access-token errors to stable human-readable messages.
 pub fn access_token_error_to_string(error: AccessTokenError) -> String {
   case error {
     RequestBuildError(reason) -> "OAuth request build failed: " <> reason
@@ -122,6 +124,7 @@ pub fn fetch_access_token_with_options(
   )
 }
 
+/// Builds and signs an OAuth client assertion JWT using the active JWK.
 pub fn build_client_assertion(
   active_jwk: Jwk,
   assertion_audience: String,

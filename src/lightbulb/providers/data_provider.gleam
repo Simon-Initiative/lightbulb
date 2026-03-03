@@ -20,6 +20,7 @@ pub type LaunchContextError {
   LaunchContextNotFound
 }
 
+/// Converts launch-context errors to human-readable messages.
 pub fn launch_context_error_to_string(error: LaunchContextError) -> String {
   case error {
     LaunchContextInvalid -> "Launch context is invalid."
@@ -34,6 +35,7 @@ pub type ProviderError {
   ProviderActiveJwkNotFound
 }
 
+/// Converts provider errors to human-readable messages.
 pub fn provider_error_to_string(error: ProviderError) -> String {
   case error {
     ProviderCreateNonceFailed -> "Failed to create nonce."

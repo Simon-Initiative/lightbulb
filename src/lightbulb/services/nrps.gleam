@@ -53,10 +53,12 @@ pub type MembershipsPage {
   MembershipsPage(members: List(Membership), links: link_header.PageLinks)
 }
 
+/// Returns an empty NRPS memberships query with no filters.
 pub fn default_memberships_query() -> MembershipsQuery {
   MembershipsQuery(role: None, limit: None, rlid: None, url: None)
 }
 
+/// Converts NRPS service errors to stable human-readable messages.
 pub fn nrps_error_to_string(error: NrpsError) -> String {
   case error {
     ClaimMissing -> "missing LTI NRPS claim"
@@ -93,6 +95,7 @@ pub fn fetch_memberships(
   })
 }
 
+/// Fetches memberships using query options and returns page links.
 pub fn fetch_memberships_with_options(
   http_provider: HttpProvider,
   context_memberships_url: String,
@@ -128,6 +131,7 @@ pub fn fetch_memberships_with_options(
   }
 }
 
+/// Fetches the next page of memberships from a pagination URL.
 pub fn fetch_next_memberships_page(
   http_provider: HttpProvider,
   next_url: String,
@@ -141,6 +145,7 @@ pub fn fetch_next_memberships_page(
   )
 }
 
+/// Fetches the differences page of memberships from a pagination URL.
 pub fn fetch_differences_memberships_page(
   http_provider: HttpProvider,
   differences_url: String,
@@ -169,6 +174,7 @@ pub fn can_read_memberships(lti_launch_claims: Dict(String, Dynamic)) -> Bool {
   }
 }
 
+/// Ensures the readonly NRPS scope is present.
 pub fn require_can_read_memberships(
   lti_launch_claims: Dict(String, Dynamic),
 ) -> Result(Nil, NrpsError) {
@@ -188,6 +194,7 @@ pub fn get_membership_service_url(
   |> result.map(fn(nrps_claim) { nrps_claim.context_memberships_url })
 }
 
+/// Decodes the NRPS claim from launch claims.
 pub fn get_nrps_claim(
   claims: Dict(String, Dynamic),
 ) -> Result(NrpsClaim, NrpsError) {

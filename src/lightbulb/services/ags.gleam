@@ -60,6 +60,7 @@ pub type Paged(a) {
   Paged(items: List(a), links: link_header.PageLinks)
 }
 
+/// Returns an empty AGS line-items query with no filters.
 pub fn default_line_items_query() -> LineItemsQuery {
   LineItemsQuery(
     resource_link_id: None,
@@ -69,10 +70,12 @@ pub fn default_line_items_query() -> LineItemsQuery {
   )
 }
 
+/// Returns an empty AGS results query with no filters.
 pub fn default_results_query() -> ResultsQuery {
   ResultsQuery(user_id: None, limit: None)
 }
 
+/// Converts AGS service errors to stable human-readable messages.
 pub fn ags_error_to_string(error: AgsError) -> String {
   case error {
     RequestInvalidUrl(url) -> "invalid AGS URL: " <> url
@@ -89,6 +92,7 @@ pub fn ags_error_to_string(error: AgsError) -> String {
   }
 }
 
+/// Posts a score to the AGS `scores` endpoint for a line item.
 pub fn post_score(
   http_provider: HttpProvider,
   score: Score,
@@ -125,6 +129,7 @@ pub fn post_score(
   }
 }
 
+/// Creates a new AGS line item under the line-items container URL.
 pub fn create_line_item(
   http_provider: HttpProvider,
   line_items_service_url: String,
@@ -174,6 +179,7 @@ pub fn create_line_item(
   }
 }
 
+/// Fetches the first matching line item for `resource_id` or creates one.
 pub fn fetch_or_create_line_item(
   http_provider: HttpProvider,
   line_items_service_url: String,
@@ -213,6 +219,7 @@ pub fn fetch_or_create_line_item(
   }
 }
 
+/// Fetches a single line item by its absolute line-item URL.
 pub fn get_line_item(
   http_provider: HttpProvider,
   line_item_url: String,
@@ -242,6 +249,7 @@ pub fn get_line_item(
   }
 }
 
+/// Lists line items from AGS, applying query filters and pagination links.
 pub fn list_line_items(
   http_provider: HttpProvider,
   line_items_service_url: String,
@@ -286,6 +294,7 @@ pub fn list_line_items(
   }
 }
 
+/// Replaces an existing line item identified by `line_item.id`.
 pub fn update_line_item(
   http_provider: HttpProvider,
   line_item: LineItem,
@@ -321,6 +330,7 @@ pub fn update_line_item(
   }
 }
 
+/// Deletes a line item by URL.
 pub fn delete_line_item(
   http_provider: HttpProvider,
   line_item_url: String,
@@ -347,6 +357,7 @@ pub fn delete_line_item(
   }
 }
 
+/// Lists result records for a line item.
 pub fn list_results(
   http_provider: HttpProvider,
   line_item_url: String,
@@ -396,6 +407,7 @@ pub fn grade_passback_available(
   can_post_scores(lti_launch_claims)
 }
 
+/// Returns True when the launch grants read access to line items.
 pub fn can_read_line_items(lti_launch_claims: Dict(String, Dynamic)) -> Bool {
   case get_lti_ags_claim(lti_launch_claims) {
     Ok(claim) ->
@@ -406,6 +418,7 @@ pub fn can_read_line_items(lti_launch_claims: Dict(String, Dynamic)) -> Bool {
   }
 }
 
+/// Returns True when the launch grants write access to line items.
 pub fn can_write_line_items(lti_launch_claims: Dict(String, Dynamic)) -> Bool {
   case get_lti_ags_claim(lti_launch_claims) {
     Ok(claim) -> list.contains(claim.scope, lineitem_scope_url)
@@ -413,6 +426,7 @@ pub fn can_write_line_items(lti_launch_claims: Dict(String, Dynamic)) -> Bool {
   }
 }
 
+/// Returns True when the launch grants score-posting access.
 pub fn can_post_scores(lti_launch_claims: Dict(String, Dynamic)) -> Bool {
   case get_lti_ags_claim(lti_launch_claims) {
     Ok(claim) -> list.contains(claim.scope, scores_scope_url)
@@ -420,6 +434,7 @@ pub fn can_post_scores(lti_launch_claims: Dict(String, Dynamic)) -> Bool {
   }
 }
 
+/// Returns True when the launch grants read access to result records.
 pub fn can_read_results(lti_launch_claims: Dict(String, Dynamic)) -> Bool {
   case get_lti_ags_claim(lti_launch_claims) {
     Ok(claim) -> list.contains(claim.scope, result_readonly_scope_url)
@@ -427,6 +442,7 @@ pub fn can_read_results(lti_launch_claims: Dict(String, Dynamic)) -> Bool {
   }
 }
 
+/// Ensures line-item read scope is present.
 pub fn require_can_read_line_items(
   lti_launch_claims: Dict(String, Dynamic),
 ) -> Result(Nil, AgsError) {
@@ -440,6 +456,7 @@ pub fn require_can_read_line_items(
   Ok(Nil)
 }
 
+/// Ensures line-item write scope is present.
 pub fn require_can_write_line_items(
   lti_launch_claims: Dict(String, Dynamic),
 ) -> Result(Nil, AgsError) {
@@ -451,6 +468,7 @@ pub fn require_can_write_line_items(
   Ok(Nil)
 }
 
+/// Ensures score-posting scope is present.
 pub fn require_can_post_scores(
   lti_launch_claims: Dict(String, Dynamic),
 ) -> Result(Nil, AgsError) {
@@ -462,6 +480,7 @@ pub fn require_can_post_scores(
   Ok(Nil)
 }
 
+/// Ensures result-read scope is present.
 pub fn require_can_read_results(
   lti_launch_claims: Dict(String, Dynamic),
 ) -> Result(Nil, AgsError) {
@@ -473,6 +492,7 @@ pub fn require_can_read_results(
   Ok(Nil)
 }
 
+/// Returns the AGS line-items service URL from launch claims.
 pub fn get_line_items_service_url(
   lti_launch_claims: Dict(String, Dynamic),
 ) -> Result(String, String) {
@@ -494,6 +514,7 @@ pub type AgsClaim {
   )
 }
 
+/// Decodes the AGS claim from LTI launch claims.
 pub fn get_lti_ags_claim(
   claims: Dict(String, Dynamic),
 ) -> Result(AgsClaim, String) {

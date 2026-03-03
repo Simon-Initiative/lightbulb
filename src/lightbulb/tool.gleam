@@ -499,6 +499,7 @@ fn validate_login_context(
   Ok(claims)
 }
 
+/// Validates the LTI message type claim and required claims for that type.
 pub fn validate_message_type(claims: Claims) -> Result(Claims, CoreError) {
   validate_required_launch_claims(claims)
   |> result.map(fn(_) { claims })

@@ -4,6 +4,7 @@ pub type NonceError {
   NonceReplayed
 }
 
+/// Converts nonce-validation errors to human-readable messages.
 pub fn nonce_error_to_string(error: NonceError) -> String {
   case error {
     NonceInvalid -> "Invalid nonce."
@@ -29,6 +30,7 @@ pub type CoreError {
   MessageTypeUnsupported
 }
 
+/// Converts core launch-validation errors to human-readable messages.
 pub fn core_error_to_string(error: CoreError) -> String {
   case error {
     LoginMissingParam(param) ->
@@ -60,6 +62,7 @@ pub type DeepLinkingError {
   DeepLinkingResponseSigningFailed
 }
 
+/// Converts deep-linking errors to human-readable messages.
 pub fn deep_linking_error_to_string(error: DeepLinkingError) -> String {
   case error {
     DeepLinkingClaimMissing -> "Missing required deep-linking claim."

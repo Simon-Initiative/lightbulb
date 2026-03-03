@@ -13,6 +13,7 @@ pub type Result {
   )
 }
 
+/// Decodes an AGS result object.
 pub fn decoder() {
   use id <- decode.optional_field("id", None, decode.optional(decode.string))
   use user_id <- decode.field("userId", decode.string)

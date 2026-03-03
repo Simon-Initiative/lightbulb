@@ -29,6 +29,7 @@ pub type TokenCache {
   )
 }
 
+/// Creates a token cache with the default refresh window.
 pub fn new() -> TokenCache {
   TokenCache(
     entries: dict.new(),
@@ -36,6 +37,7 @@ pub fn new() -> TokenCache {
   )
 }
 
+/// Creates a token cache with a custom refresh window in seconds.
 pub fn with_refresh_window(refresh_window_seconds: Int) -> TokenCache {
   let safe_refresh_window = int.max(refresh_window_seconds, 0)
   TokenCache(entries: dict.new(), refresh_window_seconds: safe_refresh_window)
@@ -45,6 +47,7 @@ fn unix_seconds(value: timestamp.Timestamp) -> Int {
   timestamp.to_unix_seconds_and_nanoseconds(value).0
 }
 
+/// Builds a deterministic cache key from issuer, client, and scopes.
 pub fn key(
   issuer issuer: String,
   client_id client_id: String,
@@ -57,6 +60,7 @@ pub fn key(
   )
 }
 
+/// Returns a cached token when it is still fresh for the current time.
 pub fn get(
   cache: TokenCache,
   cache_key: TokenCacheKey,
@@ -78,6 +82,7 @@ pub fn get(
   }
 }
 
+/// Stores a token in the cache for a computed key.
 pub fn put(
   cache: TokenCache,
   cache_key: TokenCacheKey,
@@ -87,11 +92,13 @@ pub fn put(
   TokenCache(..cache, entries: dict.insert(entries, cache_key, cached_token))
 }
 
+/// Removes a cached token entry.
 pub fn invalidate(cache: TokenCache, cache_key: TokenCacheKey) -> TokenCache {
   let TokenCache(entries: entries, ..) = cache
   TokenCache(..cache, entries: dict.delete(entries, cache_key))
 }
 
+/// Fetches a token from cache or the OAuth endpoint and returns updated cache state.
 pub fn fetch_access_token_with_cache(
   cache: TokenCache,
   providers: Providers,
