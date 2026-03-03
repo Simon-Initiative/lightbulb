@@ -1,6 +1,6 @@
-import gleeunit/should
 import gleam/time/duration
 import gleam/time/timestamp
+import gleeunit/should
 import lightbulb/providers/data_provider.{LoginContext}
 import lightbulb/providers/memory_provider
 

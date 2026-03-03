@@ -3,10 +3,7 @@ import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/option.{type Option, None}
 import gleam/result
-import lightbulb/errors.{
-  DeepLinkingClaimMissing,
-  DeepLinkingSettingsInvalid,
-}
+import lightbulb/errors.{DeepLinkingClaimMissing, DeepLinkingSettingsInvalid}
 
 pub const claim_deep_linking_settings = "https://purl.imsglobal.org/spec/lti-dl/claim/deep_linking_settings"
 

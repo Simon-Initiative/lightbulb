@@ -162,10 +162,13 @@ pub fn validate_items_accepts_allowed_type_and_count_test() {
       accept_lineitem: option.None,
     )
 
-  content_item.validate_items(
-    settings,
-    [content_item.link("https://example.com/resource-1", option.None, option.None)],
-  )
+  content_item.validate_items(settings, [
+    content_item.link(
+      "https://example.com/resource-1",
+      option.None,
+      option.None,
+    ),
+  ])
   |> should.equal(Ok(Nil))
 }
 
@@ -184,13 +187,18 @@ pub fn validate_items_rejects_multiple_when_not_allowed_test() {
       accept_lineitem: option.None,
     )
 
-  content_item.validate_items(
-    settings,
-    [
-      content_item.link("https://example.com/resource-1", option.None, option.None),
-      content_item.link("https://example.com/resource-2", option.None, option.None),
-    ],
-  )
+  content_item.validate_items(settings, [
+    content_item.link(
+      "https://example.com/resource-1",
+      option.None,
+      option.None,
+    ),
+    content_item.link(
+      "https://example.com/resource-2",
+      option.None,
+      option.None,
+    ),
+  ])
   |> should.equal(Error(errors.DeepLinkingResponseMultipleNotAllowed))
 }
 
@@ -288,10 +296,7 @@ pub fn build_response_form_post_escapes_action_and_jwt_test() {
   )
   |> should.be_true()
 
-  string.contains(
-    html,
-    "value=\"abc&lt;def&gt;&amp;&quot;ghi&quot;\"",
-  )
+  string.contains(html, "value=\"abc&lt;def&gt;&amp;&quot;ghi&quot;\"")
   |> should.be_true()
 }
 

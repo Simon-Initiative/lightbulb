@@ -9,9 +9,7 @@ import gleam/time/timestamp
 import lightbulb/providers.{type Providers}
 import lightbulb/registration.{type Registration}
 import lightbulb/services/access_token.{
-  type AccessToken,
-  type AccessTokenError,
-  AccessToken,
+  type AccessToken, type AccessTokenError, AccessToken,
 }
 
 const default_refresh_window_seconds = 60
@@ -32,7 +30,10 @@ pub type TokenCache {
 }
 
 pub fn new() -> TokenCache {
-  TokenCache(entries: dict.new(), refresh_window_seconds: default_refresh_window_seconds)
+  TokenCache(
+    entries: dict.new(),
+    refresh_window_seconds: default_refresh_window_seconds,
+  )
 }
 
 pub fn with_refresh_window(refresh_window_seconds: Int) -> TokenCache {
@@ -61,7 +62,10 @@ pub fn get(
   cache_key: TokenCacheKey,
   now_unix: Int,
 ) -> Option(CachedToken) {
-  let TokenCache(refresh_window_seconds: refresh_window_seconds, entries: entries) = cache
+  let TokenCache(
+    refresh_window_seconds: refresh_window_seconds,
+    entries: entries,
+  ) = cache
 
   case dict.get(entries, cache_key) {
     Ok(cached_token) ->
@@ -100,9 +104,11 @@ pub fn fetch_access_token_with_cache(
   case get(cache, cache_key, now_unix) {
     Some(CachedToken(token: token, ..)) -> Ok(#(token, cache))
     None -> {
-      use token <- result.try(
-        access_token.fetch_access_token_typed(providers, registration, scopes),
-      )
+      use token <- result.try(access_token.fetch_access_token_typed(
+        providers,
+        registration,
+        scopes,
+      ))
 
       maybe_cache_token(cache, cache_key, token, now_unix)
       |> result.map(fn(updated_cache) { #(token, updated_cache) })
@@ -118,12 +124,10 @@ fn maybe_cache_token(
 ) -> Result(TokenCache, AccessTokenError) {
   let AccessToken(expires_in: expires_in, ..) = token
 
-  use <- bool.guard(
-    when: expires_in <= 0,
-    return: Ok(cache),
-  )
+  use <- bool.guard(when: expires_in <= 0, return: Ok(cache))
 
-  let cached_token = CachedToken(token: token, expires_at_unix: now_unix + expires_in)
+  let cached_token =
+    CachedToken(token: token, expires_at_unix: now_unix + expires_in)
   Ok(put(cache, cache_key, cached_token))
 }
 

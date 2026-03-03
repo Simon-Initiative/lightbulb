@@ -18,15 +18,15 @@ pub fn cache_get_hit_and_stale_test() {
   let cached =
     CachedToken(
       token: AccessToken("cached-token", "Bearer", 3600, "scope:one scope:two"),
-      expires_at_unix: 2_000,
+      expires_at_unix: 2000,
     )
 
   let cache = access_token_cache.put(cache, cache_key, cached)
 
-  access_token_cache.get(cache, cache_key, 1_900)
+  access_token_cache.get(cache, cache_key, 1900)
   |> should.equal(Some(cached))
 
-  access_token_cache.get(cache, cache_key, 1_940)
+  access_token_cache.get(cache, cache_key, 1940)
   |> should.equal(None)
 }
 
@@ -45,7 +45,12 @@ pub fn fetch_access_token_with_cache_hit_test() {
     |> access_token_cache.put(
       cache_key,
       CachedToken(
-        token: AccessToken("cached-token", "Bearer", 3600, "scope:one scope:two"),
+        token: AccessToken(
+          "cached-token",
+          "Bearer",
+          3600,
+          "scope:one scope:two",
+        ),
         expires_at_unix: 3_000_000_000,
       ),
     )
@@ -56,7 +61,12 @@ pub fn fetch_access_token_with_cache_hit_test() {
     registration,
     scopes,
   )
-  |> should.equal(Ok(#(AccessToken("cached-token", "Bearer", 3600, "scope:one scope:two"), cache)))
+  |> should.equal(
+    Ok(#(
+      AccessToken("cached-token", "Bearer", 3600, "scope:one scope:two"),
+      cache,
+    )),
+  )
 
   memory_provider.cleanup(memory)
 }
@@ -94,13 +104,23 @@ pub fn fetch_access_token_with_cache_refresh_test() {
     )
 
   token
-  |> should.equal(AccessToken("fetched-token", "Bearer", 3600, "scope:one scope:two"))
+  |> should.equal(AccessToken(
+    "fetched-token",
+    "Bearer",
+    3600,
+    "scope:one scope:two",
+  ))
 
   let assert Some(CachedToken(token: cached, ..)) =
     access_token_cache.get(refreshed_cache, cache_key, 2)
 
   cached
-  |> should.equal(AccessToken("fetched-token", "Bearer", 3600, "scope:one scope:two"))
+  |> should.equal(AccessToken(
+    "fetched-token",
+    "Bearer",
+    3600,
+    "scope:one scope:two",
+  ))
 
   memory_provider.cleanup(memory)
 }

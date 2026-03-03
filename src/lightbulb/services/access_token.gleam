@@ -46,7 +46,10 @@ pub type AssertionOptions {
 }
 
 pub fn default_assertion_options() -> AssertionOptions {
-  AssertionOptions(audience: None, lifetime_seconds: default_assertion_lifetime_seconds)
+  AssertionOptions(
+    audience: None,
+    lifetime_seconds: default_assertion_lifetime_seconds,
+  )
 }
 
 fn unix_seconds(value: timestamp.Timestamp) -> Int {
@@ -58,14 +61,17 @@ pub fn access_token_error_to_string(error: AccessTokenError) -> String {
     RequestBuildError(reason) -> "OAuth request build failed: " <> reason
     HttpTransportError(reason) -> "OAuth request transport failed: " <> reason
     HttpStatusError(status, _) ->
-      "OAuth token endpoint returned unexpected status: " <> int.to_string(status)
+      "OAuth token endpoint returned unexpected status: "
+      <> int.to_string(status)
     OAuthError(error, error_description, _) ->
       case error_description {
-        Some(description) -> "OAuth token endpoint error (" <> error <> "): " <> description
+        Some(description) ->
+          "OAuth token endpoint error (" <> error <> "): " <> description
         None -> "OAuth token endpoint error: " <> error
       }
     DecodeError(reason) -> "OAuth token response decode failed: " <> reason
-    AssertionBuildError(reason) -> "OAuth client assertion build failed: " <> reason
+    AssertionBuildError(reason) ->
+      "OAuth client assertion build failed: " <> reason
   }
 }
 
@@ -108,16 +114,15 @@ pub fn fetch_access_token_with_options(
   )
 
   let AssertionOptions(audience: configured_audience, ..) = assertion_options
-  let resolved_audience = audience(registration.access_token_endpoint, configured_audience)
+  let resolved_audience =
+    audience(registration.access_token_endpoint, configured_audience)
 
-  use client_assertion <- result.try(
-    build_client_assertion(
-      active_jwk,
-      resolved_audience,
-      registration.client_id,
-      assertion_options,
-    ),
-  )
+  use client_assertion <- result.try(build_client_assertion(
+    active_jwk,
+    resolved_audience,
+    registration.client_id,
+    assertion_options,
+  ))
 
   request_token(
     providers.http,
@@ -146,7 +151,9 @@ pub fn build_client_assertion(
   let AssertionOptions(lifetime_seconds: lifetime_seconds, ..) = options
   use <- bool.guard(
     when: lifetime_seconds <= 0,
-    return: Error(AssertionBuildError("assertion lifetime must be greater than zero")),
+    return: Error(AssertionBuildError(
+      "assertion lifetime must be greater than zero",
+    )),
   )
 
   let #(_, jwk_map) = jwk.to_map(active_jwk)
@@ -244,20 +251,26 @@ fn decode_access_token(
       None,
       decode.optional(decode.int),
     )
-    use scope <- decode.optional_field("scope", None, decode.optional(decode.string))
+    use scope <- decode.optional_field(
+      "scope",
+      None,
+      decode.optional(decode.string),
+    )
 
-    decode.success(AccessToken(
-      token: token,
-      token_type: token_type,
-      expires_in: case expires_in {
-        Some(value) -> value
-        None -> 0
-      },
-      scope: case scope {
-        Some(value) -> value
-        None -> requested_scope
-      },
-    ))
+    decode.success(
+      AccessToken(
+        token: token,
+        token_type: token_type,
+        expires_in: case expires_in {
+          Some(value) -> value
+          None -> 0
+        },
+        scope: case scope {
+          Some(value) -> value
+          None -> requested_scope
+        },
+      ),
+    )
   }
 
   json.parse(body, access_token_decoder)

@@ -1,7 +1,7 @@
 import gleam/dict
 import gleam/dynamic/decode
 import gleam/http
-import gleam/http/request as request
+import gleam/http/request
 import gleam/http/response
 import gleam/option.{None, Some}
 import gleam/result
@@ -14,13 +14,8 @@ import lightbulb/providers/http_mock_provider
 import lightbulb/providers/memory_provider
 import lightbulb/registration.{type Registration, Registration}
 import lightbulb/services/access_token.{
-  AccessToken,
-  AssertionBuildError,
-  AssertionOptions,
-  HttpStatusError,
-  OAuthError,
-  build_client_assertion,
-  fetch_access_token,
+  AccessToken, AssertionBuildError, AssertionOptions, HttpStatusError,
+  OAuthError, build_client_assertion, fetch_access_token,
   fetch_access_token_typed,
 }
 import lightbulb/services/ags
@@ -37,47 +32,52 @@ type Fixture {
 }
 
 pub fn access_token_success_and_request_shape_test() {
-  let fixture = setup_fixture(fn(req) {
-    req.path
-    |> should.equal("/auth/token")
+  let fixture =
+    setup_fixture(fn(req) {
+      req.path
+      |> should.equal("/auth/token")
 
-    req.method
-    |> should.equal(http.Post)
+      req.method
+      |> should.equal(http.Post)
 
-    req
-    |> request.get_header("content-type")
-    |> should.equal(Ok("application/x-www-form-urlencoded"))
+      req
+      |> request.get_header("content-type")
+      |> should.equal(Ok("application/x-www-form-urlencoded"))
 
-    req
-    |> request.get_header("accept")
-    |> should.equal(Ok("application/json"))
+      req
+      |> request.get_header("accept")
+      |> should.equal(Ok("application/json"))
 
-    req.body
-    |> string.contains("grant_type=client_credentials")
-    |> should.equal(True)
+      req.body
+      |> string.contains("grant_type=client_credentials")
+      |> should.equal(True)
 
-    req.body
-    |> string.contains(
-      "client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion-type%3Ajwt-bearer",
-    )
-    |> should.equal(True)
+      req.body
+      |> string.contains(
+        "client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion-type%3Ajwt-bearer",
+      )
+      |> should.equal(True)
 
-    req.body
-    |> string.contains("scope=")
-    |> should.equal(True)
+      req.body
+      |> string.contains("scope=")
+      |> should.equal(True)
 
-    req.body
-    |> string.contains("client_assertion=")
-    |> should.equal(True)
+      req.body
+      |> string.contains("client_assertion=")
+      |> should.equal(True)
 
-    response.new(200)
-    |> response.set_body(
-      "\n        {\n          \"access_token\": \"SOME_ACCESS_TOKEN\",\n          \"token_type\": \"Bearer\",\n          \"expires_in\": 3600,\n          \"scope\": \"some scopes\"\n        }\n        ",
-    )
-    |> Ok
-  })
+      response.new(200)
+      |> response.set_body(
+        "\n        {\n          \"access_token\": \"SOME_ACCESS_TOKEN\",\n          \"token_type\": \"Bearer\",\n          \"expires_in\": 3600,\n          \"scope\": \"some scopes\"\n        }\n        ",
+      )
+      |> Ok
+    })
 
-  fetch_access_token_typed(fixture.providers, fixture.registration, fixture.scopes)
+  fetch_access_token_typed(
+    fixture.providers,
+    fixture.registration,
+    fixture.scopes,
+  )
   |> should.equal(
     Ok(AccessToken("SOME_ACCESS_TOKEN", "Bearer", 3600, "some scopes")),
   )
@@ -86,22 +86,26 @@ pub fn access_token_success_and_request_shape_test() {
 }
 
 pub fn tolerant_decode_missing_optional_fields_test() {
-  let fixture = setup_fixture(fn(_req) {
-    response.new(200)
-    |> response.set_body(
-      "{\"access_token\":\"SOME_ACCESS_TOKEN\",\"token_type\":\"Bearer\"}",
-    )
-    |> Ok
-  })
+  let fixture =
+    setup_fixture(fn(_req) {
+      response.new(200)
+      |> response.set_body(
+        "{\"access_token\":\"SOME_ACCESS_TOKEN\",\"token_type\":\"Bearer\"}",
+      )
+      |> Ok
+    })
 
-  fetch_access_token_typed(fixture.providers, fixture.registration, fixture.scopes)
+  fetch_access_token_typed(
+    fixture.providers,
+    fixture.registration,
+    fixture.scopes,
+  )
   |> should.equal(
     Ok(AccessToken(
       token: "SOME_ACCESS_TOKEN",
       token_type: "Bearer",
       expires_in: 0,
-      scope:
-        ags.lineitem_scope_url
+      scope: ags.lineitem_scope_url
         <> " "
         <> ags.result_readonly_scope_url
         <> " "
@@ -115,15 +119,20 @@ pub fn tolerant_decode_missing_optional_fields_test() {
 }
 
 pub fn oauth_error_mapping_test() {
-  let fixture = setup_fixture(fn(_req) {
-    response.new(401)
-    |> response.set_body(
-      "{\"error\":\"invalid_client\",\"error_description\":\"bad secret\",\"error_uri\":\"https://example.com/errors/invalid_client\"}",
-    )
-    |> Ok
-  })
+  let fixture =
+    setup_fixture(fn(_req) {
+      response.new(401)
+      |> response.set_body(
+        "{\"error\":\"invalid_client\",\"error_description\":\"bad secret\",\"error_uri\":\"https://example.com/errors/invalid_client\"}",
+      )
+      |> Ok
+    })
 
-  fetch_access_token_typed(fixture.providers, fixture.registration, fixture.scopes)
+  fetch_access_token_typed(
+    fixture.providers,
+    fixture.registration,
+    fixture.scopes,
+  )
   |> should.equal(
     Error(OAuthError(
       error: "invalid_client",
@@ -133,20 +142,29 @@ pub fn oauth_error_mapping_test() {
   )
 
   fetch_access_token(fixture.providers, fixture.registration, fixture.scopes)
-  |> should.equal(Error("OAuth token endpoint error (invalid_client): bad secret"))
+  |> should.equal(Error(
+    "OAuth token endpoint error (invalid_client): bad secret",
+  ))
 
   memory_provider.cleanup(fixture.memory)
 }
 
 pub fn non_json_error_body_maps_to_http_status_error_test() {
-  let fixture = setup_fixture(fn(_req) {
-    response.new(500)
-    |> response.set_body("gateway unavailable")
-    |> Ok
-  })
+  let fixture =
+    setup_fixture(fn(_req) {
+      response.new(500)
+      |> response.set_body("gateway unavailable")
+      |> Ok
+    })
 
-  fetch_access_token_typed(fixture.providers, fixture.registration, fixture.scopes)
-  |> should.equal(Error(HttpStatusError(status: 500, body: "gateway unavailable")))
+  fetch_access_token_typed(
+    fixture.providers,
+    fixture.registration,
+    fixture.scopes,
+  )
+  |> should.equal(
+    Error(HttpStatusError(status: 500, body: "gateway unavailable")),
+  )
 
   memory_provider.cleanup(fixture.memory)
 }

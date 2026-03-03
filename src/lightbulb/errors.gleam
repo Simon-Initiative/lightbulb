@@ -31,8 +31,10 @@ pub type CoreError {
 
 pub fn core_error_to_string(error: CoreError) -> String {
   case error {
-    LoginMissingParam(param) -> "Missing required login parameter: " <> param <> "."
-    LaunchMissingParam(param) -> "Missing required launch parameter: " <> param <> "."
+    LoginMissingParam(param) ->
+      "Missing required login parameter: " <> param <> "."
+    LaunchMissingParam(param) ->
+      "Missing required launch parameter: " <> param <> "."
     JwtInvalidSignature -> "Invalid token signature."
     JwtInvalidClaim -> "Token claims are invalid."
     JwtExpired -> "Token has expired."
@@ -63,11 +65,11 @@ pub fn deep_linking_error_to_string(error: DeepLinkingError) -> String {
     DeepLinkingClaimMissing -> "Missing required deep-linking claim."
     DeepLinkingClaimInvalid -> "Deep-linking claim has invalid format."
     DeepLinkingSettingsInvalid -> "Deep-linking settings are invalid."
-    DeepLinkingResponseInvalidItemType -> "Response contains an unsupported item type."
+    DeepLinkingResponseInvalidItemType ->
+      "Response contains an unsupported item type."
     DeepLinkingResponseMultipleNotAllowed ->
       "Multiple items are not allowed for this deep-linking request."
-    DeepLinkingResponseInvalidReturnUrl ->
-      "Deep-link return URL is invalid."
+    DeepLinkingResponseInvalidReturnUrl -> "Deep-link return URL is invalid."
     DeepLinkingResponseSigningFailed -> "Failed to sign deep-linking response."
   }
 }

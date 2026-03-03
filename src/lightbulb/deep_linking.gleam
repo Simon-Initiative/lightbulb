@@ -11,11 +11,8 @@ import gleam/uri
 import lightbulb/deep_linking/content_item.{type ContentItem}
 import lightbulb/deep_linking/settings.{type DeepLinkingSettings}
 import lightbulb/errors.{
-  type DeepLinkingError,
-  DeepLinkingClaimInvalid,
-  DeepLinkingClaimMissing,
-  DeepLinkingResponseInvalidReturnUrl,
-  DeepLinkingResponseSigningFailed,
+  type DeepLinkingError, DeepLinkingClaimInvalid, DeepLinkingClaimMissing,
+  DeepLinkingResponseInvalidReturnUrl, DeepLinkingResponseSigningFailed,
 }
 import lightbulb/jose
 import lightbulb/jwk.{type Jwk}
@@ -117,8 +114,8 @@ pub fn build_response_jwt(
       #(
         "iat",
         timestamp.system_time()
-        |> unix_seconds
-        |> dynamic.int,
+          |> unix_seconds
+          |> dynamic.int,
       ),
       #(
         "exp",

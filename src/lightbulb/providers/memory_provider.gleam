@@ -20,18 +20,10 @@ import lightbulb/errors.{NonceExpired, NonceInvalid, NonceReplayed}
 import lightbulb/jwk.{type Jwk}
 import lightbulb/nonce.{type Nonce, Nonce}
 import lightbulb/providers/data_provider.{
-  type DataProvider,
-  type LaunchContextProvider,
-  type LoginContext,
-  type ProviderError,
-  LaunchContextInvalid,
-  LaunchContextNotFound,
-  LaunchContextProvider,
-  ProviderActiveJwkNotFound,
-  ProviderCreateNonceFailed,
-  ProviderDeploymentNotFound,
-  ProviderRegistrationNotFound,
-  from_parts,
+  type DataProvider, type LaunchContextProvider, type LoginContext,
+  type ProviderError, LaunchContextInvalid, LaunchContextNotFound,
+  LaunchContextProvider, ProviderActiveJwkNotFound, ProviderCreateNonceFailed,
+  ProviderDeploymentNotFound, ProviderRegistrationNotFound, from_parts,
 }
 import lightbulb/providers/memory_provider/tables.{type Table}
 import lightbulb/registration.{type Registration}
@@ -71,14 +63,8 @@ pub type Message {
   CreateNonce(reply_with: Subject(Result(Nonce, Nil)))
   InsertNonce(nonce: Nonce)
   ValidateNonce(value: String, reply_with: Subject(NonceValidation))
-  SaveLoginContext(
-    context: LoginContext,
-    reply_with: Subject(Result(Nil, Nil)),
-  )
-  GetLoginContext(
-    state: String,
-    reply_with: Subject(Result(LoginContext, Nil)),
-  )
+  SaveLoginContext(context: LoginContext, reply_with: Subject(Result(Nil, Nil)))
+  GetLoginContext(state: String, reply_with: Subject(Result(LoginContext, Nil)))
   ConsumeLoginContext(state: String, reply_with: Subject(Result(Nil, Nil)))
   CleanupExpiredNonces
   CreateRegistration(
@@ -168,21 +154,25 @@ fn handle_message(state: State, message: Message) -> actor.Next(State, Message) 
         }
 
         False -> {
-          let maybe_nonce = list.find(state.nonces, fn(nonce) { nonce.nonce == value })
+          let maybe_nonce =
+            list.find(state.nonces, fn(nonce) { nonce.nonce == value })
 
           let nonces =
             list.filter(state.nonces, fn(nonce) { nonce.nonce != value })
 
           case maybe_nonce {
             Ok(nonce) -> {
-              case timestamp.compare(timestamp.system_time(), nonce.expires_at) {
+              case
+                timestamp.compare(timestamp.system_time(), nonce.expires_at)
+              {
                 Lt -> {
                   actor.send(reply_with, ValidNonce)
-                  actor.continue(State(
-                    ..state,
-                    nonces: nonces,
-                    used_nonces: [value, ..state.used_nonces],
-                  ))
+                  actor.continue(
+                    State(..state, nonces: nonces, used_nonces: [
+                      value,
+                      ..state.used_nonces
+                    ]),
+                  )
                 }
 
                 _ -> {
@@ -203,10 +193,16 @@ fn handle_message(state: State, message: Message) -> actor.Next(State, Message) 
 
     SaveLoginContext(context, reply_with) -> {
       actor.send(reply_with, Ok(Nil))
-      actor.continue(State(
-        ..state,
-        login_contexts: dict.insert(state.login_contexts, context.state, context),
-      ))
+      actor.continue(
+        State(
+          ..state,
+          login_contexts: dict.insert(
+            state.login_contexts,
+            context.state,
+            context,
+          ),
+        ),
+      )
     }
 
     GetLoginContext(state_key, reply_with) -> {
@@ -215,11 +211,16 @@ fn handle_message(state: State, message: Message) -> actor.Next(State, Message) 
     }
 
     ConsumeLoginContext(state_key, reply_with) -> {
-      actor.send(reply_with, dict.get(state.login_contexts, state_key) |> result.map(fn(_) { Nil }))
-      actor.continue(State(
-        ..state,
-        login_contexts: dict.delete(state.login_contexts, state_key),
-      ))
+      actor.send(
+        reply_with,
+        dict.get(state.login_contexts, state_key) |> result.map(fn(_) { Nil }),
+      )
+      actor.continue(
+        State(
+          ..state,
+          login_contexts: dict.delete(state.login_contexts, state_key),
+        ),
+      )
     }
 
     CleanupExpiredNonces -> {

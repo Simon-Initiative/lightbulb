@@ -302,17 +302,15 @@ pub fn missing_state_context_failure_test() {
 pub fn expired_state_context_failure_test() {
   let fixture = setup_fixture(option.None)
 
-  let assert Ok(Nil) = fixture.provider.save_login_context(
-    LoginContext(
+  let assert Ok(Nil) =
+    fixture.provider.save_login_context(LoginContext(
       state: fixture.state,
       target_link_uri: fixture.target_link_uri,
       issuer: fixture.issuer,
       client_id: fixture.client_id,
-      expires_at:
-        timestamp.system_time()
+      expires_at: timestamp.system_time()
         |> timestamp.add(duration.minutes(-10)),
-    ),
-  )
+    ))
 
   let id_token = sign_token(fixture, base_claims(fixture), fixture.kid)
 
@@ -356,11 +354,12 @@ pub fn expired_nonce_failure_test() {
     nonce.Nonce(
       expired_nonce,
       timestamp.system_time()
-      |> timestamp.add(duration.minutes(-10)),
+        |> timestamp.add(duration.minutes(-10)),
     ),
   )
 
-  let claims = dict.insert(base_claims(fixture), "nonce", dynamic.string(expired_nonce))
+  let claims =
+    dict.insert(base_claims(fixture), "nonce", dynamic.string(expired_nonce))
   let id_token = sign_token(fixture, claims, fixture.kid)
 
   tool.validate_launch(
@@ -385,17 +384,15 @@ pub fn replayed_nonce_failure_test() {
   )
   |> should.be_ok()
 
-  let assert Ok(Nil) = fixture.provider.save_login_context(
-    LoginContext(
+  let assert Ok(Nil) =
+    fixture.provider.save_login_context(LoginContext(
       state: fixture.state,
       target_link_uri: fixture.target_link_uri,
       issuer: fixture.issuer,
       client_id: fixture.client_id,
-      expires_at:
-        timestamp.system_time()
+      expires_at: timestamp.system_time()
         |> timestamp.add(duration.minutes(5)),
-    ),
-  )
+    ))
 
   tool.validate_launch(
     fixture.provider,
@@ -426,7 +423,8 @@ pub fn invalid_signature_failure_test() {
   let fixture = setup_fixture(option.None)
   let #(_, attacker_jwk) = jose.generate_key(jose.Rsa(2048)) |> jose.to_map()
 
-  let id_token = sign_token_with_jwk(attacker_jwk, base_claims(fixture), fixture.kid)
+  let id_token =
+    sign_token_with_jwk(attacker_jwk, base_claims(fixture), fixture.kid)
 
   tool.validate_launch(
     fixture.provider,
@@ -503,10 +501,21 @@ fn setup_fixture(keyset_url_override: option.Option(String)) -> Fixture {
       #("target_link_uri", target_link_uri),
     ])
 
-  let assert Ok(#(state, redirect_url)) = tool.oidc_login(provider, login_params)
+  let assert Ok(#(state, redirect_url)) =
+    tool.oidc_login(provider, login_params)
   let nonce = redirect_query_param(redirect_url, "nonce")
 
-  Fixture(memory, provider, issuer, client_id, target_link_uri, state, nonce, signing_jwk, kid)
+  Fixture(
+    memory,
+    provider,
+    issuer,
+    client_id,
+    target_link_uri,
+    state,
+    nonce,
+    signing_jwk,
+    kid,
+  )
 }
 
 fn build_keyset_json(jwk: dict.Dict(String, String)) -> String {
@@ -529,7 +538,11 @@ fn redirect_query_param(url: String, key: String) -> String {
   value
 }
 
-fn sign_token(fixture: Fixture, claims: dict.Dict(String, dynamic.Dynamic), kid: String) {
+fn sign_token(
+  fixture: Fixture,
+  claims: dict.Dict(String, dynamic.Dynamic),
+  kid: String,
+) {
   sign_token_with_jwk(fixture.signing_jwk, claims, kid)
 }
 
@@ -538,8 +551,7 @@ fn sign_token_with_jwk(
   claims: dict.Dict(String, dynamic.Dynamic),
   kid: String,
 ) -> String {
-  let jws =
-    dict.from_list([#("alg", "RS256"), #("typ", "JWT"), #("kid", kid)])
+  let jws = dict.from_list([#("alg", "RS256"), #("typ", "JWT"), #("kid", kid)])
 
   let #(_, jose_jwt) = jose.sign_with_jws(jwk, jws, claims)
   let #(_, compact_signed) = jose.compact(jose_jwt)
@@ -589,7 +601,9 @@ fn base_claims_with_audience(fixture: Fixture, aud: dynamic.Dynamic) {
     #(
       "https://purl.imsglobal.org/spec/lti/claim/roles",
       dynamic.list([
-        dynamic.string("http://purl.imsglobal.org/vocab/lis/v2/membership#Learner"),
+        dynamic.string(
+          "http://purl.imsglobal.org/vocab/lis/v2/membership#Learner",
+        ),
       ]),
     ),
   ])
@@ -597,10 +611,7 @@ fn base_claims_with_audience(fixture: Fixture, aud: dynamic.Dynamic) {
 
 fn deep_linking_settings_claim(return_url: String) -> dynamic.Dynamic {
   dynamic.properties([
-    #(
-      dynamic.string("deep_link_return_url"),
-      dynamic.string(return_url),
-    ),
+    #(dynamic.string("deep_link_return_url"), dynamic.string(return_url)),
     #(
       dynamic.string("accept_types"),
       dynamic.list([dynamic.string("ltiResourceLink"), dynamic.string("link")]),

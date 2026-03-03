@@ -5,8 +5,7 @@ import gleam/list
 import gleam/option.{type Option}
 import lightbulb/deep_linking/settings.{type DeepLinkingSettings}
 import lightbulb/errors.{
-  type DeepLinkingError,
-  DeepLinkingResponseInvalidItemType,
+  type DeepLinkingError, DeepLinkingResponseInvalidItemType,
   DeepLinkingResponseMultipleNotAllowed,
 }
 

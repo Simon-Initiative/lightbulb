@@ -63,7 +63,8 @@ pub type DataProvider {
     get_login_context: fn(String) -> Result(LoginContext, LaunchContextError),
     consume_login_context: fn(String) -> Result(Nil, LaunchContextError),
     get_registration: fn(String, String) -> Result(Registration, ProviderError),
-    get_deployment: fn(String, String, String) -> Result(Deployment, ProviderError),
+    get_deployment: fn(String, String, String) ->
+      Result(Deployment, ProviderError),
     get_active_jwk: fn() -> Result(Jwk, ProviderError),
   )
 }
@@ -75,7 +76,8 @@ pub fn from_parts(
   validate_nonce: fn(String) -> Result(Nil, NonceError),
   launch_context: LaunchContextProvider,
   get_registration: fn(String, String) -> Result(Registration, ProviderError),
-  get_deployment: fn(String, String, String) -> Result(Deployment, ProviderError),
+  get_deployment: fn(String, String, String) ->
+    Result(Deployment, ProviderError),
   get_active_jwk: fn() -> Result(Jwk, ProviderError),
 ) -> DataProvider {
   let LaunchContextProvider(
