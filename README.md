@@ -133,23 +133,6 @@ fn get_cookie(req: Request, name name: String) -> Result(String, Nil) {
 
 ```
 
-### OAuth Service Tokens
-
-`lightbulb/services/access_token` provides:
-
-- `fetch_access_token/3 -> Result(AccessToken, AccessTokenError)` for structured
-  OAuth error handling (`OAuthError`, `HttpStatusError`, `DecodeError`, etc.).
-
-Optional token caching is available in `lightbulb/services/access_token_cache`:
-
-- `TokenCacheKey` keyed by issuer/client/scopes.
-- `fetch_access_token_with_cache/4` wrapper for cache hit/miss/stale refresh flows.
-
-For custom assertion audience/TTL, use:
-
-- `default_assertion_options/0`
-- `fetch_access_token_with_options/4`
-
 ### AGS (Assignments and Grades)
 
 `lightbulb/services/ags` now includes full AGS line-item CRUD, results retrieval,
@@ -293,6 +276,23 @@ fn build_deep_linking_response_html(data_provider, claims) {
   deep_linking.build_response_form_post(settings.deep_link_return_url, jwt)
 }
 ```
+
+### OAuth Service Tokens
+
+`lightbulb/services/access_token` provides:
+
+- `fetch_access_token/3 -> Result(AccessToken, AccessTokenError)` for structured
+  OAuth error handling (`OAuthError`, `HttpStatusError`, `DecodeError`, etc.).
+
+Optional token caching is available in `lightbulb/services/access_token_cache`:
+
+- `TokenCacheKey` keyed by issuer/client/scopes.
+- `fetch_access_token_with_cache/4` wrapper for cache hit/miss/stale refresh flows.
+
+For custom assertion audience/TTL, use:
+
+- `default_assertion_options/0`
+- `fetch_access_token_with_options/4`
 
 ### DataProvider Adapter
 
