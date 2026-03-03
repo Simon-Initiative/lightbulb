@@ -75,18 +75,8 @@ pub fn access_token_error_to_string(error: AccessTokenError) -> String {
   }
 }
 
-/// Backward-compatible token fetch API that preserves the `Result(_, String)` shape.
+/// Requests an OAuth2 access token.
 pub fn fetch_access_token(
-  providers: Providers,
-  registration: Registration,
-  scopes: List(String),
-) -> Result(AccessToken, String) {
-  fetch_access_token_typed(providers, registration, scopes)
-  |> result.map_error(access_token_error_to_string)
-}
-
-/// Requests an OAuth2 access token and returns typed token errors.
-pub fn fetch_access_token_typed(
   providers: Providers,
   registration: Registration,
   scopes: List(String),

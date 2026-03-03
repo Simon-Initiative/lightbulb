@@ -9,7 +9,7 @@
   - [x] `error`
   - [x] `error_description`
   - [x] `error_uri`
-- [x] Add compatibility mapping from typed errors to existing string-return API.
+- [x] Expose typed token errors as the primary API contract.
 - [x] Expand tests in `test/lightbulb/services/access_token_test.gleam` for tolerant and error variants.
 
 ## Phase 2: Assertion Audience and Lifetime Hardening
@@ -54,7 +54,7 @@
   - [x] optional cache utility usage
   - [x] provider contract changes/adapters
 - [x] Provide migration guide snippets for users with custom providers.
-- [x] Confirm backward compatibility strategy and deprecation path (if any) is documented.
+- [x] Document typed-only token API migration for `v2.0.0`.
 
 ## Cross-Feature Dependencies
 - `core`: provider contract changes for launch context/state/nonce are consumed directly by core launch validation flow.

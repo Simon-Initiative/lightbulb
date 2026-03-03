@@ -15,8 +15,8 @@ import lightbulb/providers/memory_provider
 import lightbulb/registration.{type Registration, Registration}
 import lightbulb/services/access_token.{
   AccessToken, AssertionBuildError, AssertionOptions, HttpStatusError,
-  OAuthError, build_client_assertion, fetch_access_token,
-  fetch_access_token_typed,
+  OAuthError, access_token_error_to_string, build_client_assertion,
+  fetch_access_token,
 }
 import lightbulb/services/ags
 import lightbulb/services/nrps
@@ -73,11 +73,7 @@ pub fn access_token_success_and_request_shape_test() {
       |> Ok
     })
 
-  fetch_access_token_typed(
-    fixture.providers,
-    fixture.registration,
-    fixture.scopes,
-  )
+  fetch_access_token(fixture.providers, fixture.registration, fixture.scopes)
   |> should.equal(
     Ok(AccessToken("SOME_ACCESS_TOKEN", "Bearer", 3600, "some scopes")),
   )
@@ -95,11 +91,7 @@ pub fn tolerant_decode_missing_optional_fields_test() {
       |> Ok
     })
 
-  fetch_access_token_typed(
-    fixture.providers,
-    fixture.registration,
-    fixture.scopes,
-  )
+  fetch_access_token(fixture.providers, fixture.registration, fixture.scopes)
   |> should.equal(
     Ok(AccessToken(
       token: "SOME_ACCESS_TOKEN",
@@ -128,11 +120,7 @@ pub fn oauth_error_mapping_test() {
       |> Ok
     })
 
-  fetch_access_token_typed(
-    fixture.providers,
-    fixture.registration,
-    fixture.scopes,
-  )
+  fetch_access_token(fixture.providers, fixture.registration, fixture.scopes)
   |> should.equal(
     Error(OAuthError(
       error: "invalid_client",
@@ -141,10 +129,12 @@ pub fn oauth_error_mapping_test() {
     )),
   )
 
-  fetch_access_token(fixture.providers, fixture.registration, fixture.scopes)
-  |> should.equal(Error(
-    "OAuth token endpoint error (invalid_client): bad secret",
+  access_token_error_to_string(OAuthError(
+    error: "invalid_client",
+    error_description: Some("bad secret"),
+    error_uri: Some("https://example.com/errors/invalid_client"),
   ))
+  |> should.equal("OAuth token endpoint error (invalid_client): bad secret")
 
   memory_provider.cleanup(fixture.memory)
 }
@@ -157,11 +147,7 @@ pub fn non_json_error_body_maps_to_http_status_error_test() {
       |> Ok
     })
 
-  fetch_access_token_typed(
-    fixture.providers,
-    fixture.registration,
-    fixture.scopes,
-  )
+  fetch_access_token(fixture.providers, fixture.registration, fixture.scopes)
   |> should.equal(
     Error(HttpStatusError(status: 500, body: "gateway unavailable")),
   )

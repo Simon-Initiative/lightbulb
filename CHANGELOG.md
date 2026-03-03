@@ -12,7 +12,7 @@ This changelog serves as release notes and is maintained as WIP until a release 
   JWT/form-post payloads.
 - Service integrations for AGS and NRPS workflows.
 - OAuth service token typed API and error taxonomy:
-  - `services/access_token.fetch_access_token_typed/3`
+  - `services/access_token.fetch_access_token/3`
   - `services/access_token.fetch_access_token_with_options/4`
   - `services/access_token.access_token_error_to_string/1`
 - Optional OAuth token cache helper:
@@ -119,9 +119,10 @@ This changelog serves as release notes and is maintained as WIP until a release 
   `resource_link_id`, `tag`, `start_date_time`, `end_date_time`,
   `grades_released`.
 - Migration for OAuth callers:
-  - Existing `fetch_access_token/3` remains supported.
-  - Prefer `fetch_access_token_typed/3` for structured handling and map to strings only
-    at process boundaries with `access_token_error_to_string/1`.
+  - `fetch_access_token/3` now returns typed errors:
+    `Result(AccessToken, AccessTokenError)`.
+  - If you need user-facing string messages, convert with
+    `access_token_error_to_string/1` at process boundaries.
   - If you need custom assertion audience or TTL, switch to
     `fetch_access_token_with_options/4`.
   - To reduce token endpoint traffic, adopt `services/access_token_cache` and route

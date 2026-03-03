@@ -5,10 +5,12 @@ A library for building LTI 1.3 tools in Gleam
 [![Package Version](https://img.shields.io/hexpm/v/lightbulb)](https://hex.pm/packages/lightbulb)
 [![Hex Docs](https://img.shields.io/badge/hex-docs-ffaff3)](https://hexdocs.pm/lightbulb/)
 
+For API changes across versions, see [`CHANGELOG.md`](./CHANGELOG.md).
+
 ### Installation
 
 ```sh
-gleam add lightbulb@1
+gleam add lightbulb@2
 ```
 
 ### Usage
@@ -131,35 +133,20 @@ fn get_cookie(req: Request, name name: String) -> Result(String, Nil) {
 
 ```
 
-Further documentation can be found at <https://hexdocs.pm/lightbulb>.
-
-For API changes across versions, see [`CHANGELOG.md`](./CHANGELOG.md).
-
-### Certification Readiness
-
-- Conformance matrix: `docs/complete_lti_support/conformance_matrix.md`
-- Runbook: `docs/complete_lti_support/certification_runbook.md`
-- Evidence package: `docs/complete_lti_support/evidence/`
-
-Maintainer workflow for certification artifacts:
-
-1. Update conformance rows when implementing or changing behavior.
-2. Run `scripts/lint_conformance_matrix.sh`.
-3. Run `gleam test`.
-4. Refresh evidence files and `last_verified_date` for impacted rows.
-
 ### OAuth Service Tokens
 
-`lightbulb/services/access_token` now provides both:
-- `fetch_access_token/3 -> Result(AccessToken, String)` for backward compatibility.
-- `fetch_access_token_typed/3 -> Result(AccessToken, AccessTokenError)` for structured
+`lightbulb/services/access_token` provides:
+
+- `fetch_access_token/3 -> Result(AccessToken, AccessTokenError)` for structured
   OAuth error handling (`OAuthError`, `HttpStatusError`, `DecodeError`, etc.).
 
 Optional token caching is available in `lightbulb/services/access_token_cache`:
+
 - `TokenCacheKey` keyed by issuer/client/scopes.
 - `fetch_access_token_with_cache/4` wrapper for cache hit/miss/stale refresh flows.
 
 For custom assertion audience/TTL, use:
+
 - `default_assertion_options/0`
 - `fetch_access_token_with_options/4`
 
@@ -169,6 +156,7 @@ For custom assertion audience/TTL, use:
 scope helpers, and pagination metadata support.
 
 Typed APIs:
+
 - `post_score/4`
 - `get_line_item/3`
 - `list_line_items/4 -> Result(Paged(LineItem), AgsError)`
@@ -183,6 +171,7 @@ Typed APIs:
   `require_can_post_scores/1`, `require_can_read_results/1`
 
 Compatibility note:
+
 - `grade_passback_available/1` now reflects score-post capability (`scope/score`),
   not results-read capability.
 - `LineItem` includes AGS optional fields:
@@ -194,6 +183,7 @@ Compatibility note:
 scope checks, filtered membership fetches, and pagination links.
 
 Key APIs:
+
 - `get_nrps_claim/1 -> Result(NrpsClaim, NrpsError)`
 - `can_read_memberships/1` and `require_can_read_memberships/1`
 - `fetch_memberships_with_options/4 -> Result(MembershipsPage, NrpsError)`
@@ -237,6 +227,7 @@ fn load_members(http_provider, claims, access_token) {
 ```
 
 Migration note:
+
 - `Membership` now requires only `user_id` and `roles`; profile fields are optional:
   `status`, `name`, `given_name`, `family_name`, `middle_name`, `email`,
   `picture`, `lis_person_sourcedid`.

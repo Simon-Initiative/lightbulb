@@ -104,7 +104,7 @@ pub fn fetch_access_token_with_cache(
   case get(cache, cache_key, now_unix) {
     Some(CachedToken(token: token, ..)) -> Ok(#(token, cache))
     None -> {
-      use token <- result.try(access_token.fetch_access_token_typed(
+      use token <- result.try(access_token.fetch_access_token(
         providers,
         registration,
         scopes,
