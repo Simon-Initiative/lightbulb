@@ -1,8 +1,6 @@
 # Changelog
 
-This changelog serves as release notes and is maintained as WIP until a release is cut.
-
-## [Unreleased] (target: 2.0.0)
+## [2.0.0]
 
 ### Features
 
