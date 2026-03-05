@@ -1,0 +1,4 @@
+interface:
+  display_name: "Software Engineer"
+  short_description: "Ship features and bugfixes across Gleam, OTP, web, and LTI"
+  default_prompt: "Use $software-engineer to investigate or implement a bugfix/feature, and for larger work follow docs/features/<feature>/prd.md, fdd.md, and plan.md."

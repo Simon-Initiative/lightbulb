@@ -8,6 +8,7 @@ pub type Jwk {
   Jwk(kid: String, typ: String, alg: String, pem: String)
 }
 
+/// Decodes a single persisted JWK record.
 pub fn jwk_decoder() {
   use kid <- decode.field("kid", decode.string)
   use typ <- decode.optional_field("typ", "JWT", decode.string)
@@ -17,12 +18,14 @@ pub fn jwk_decoder() {
   decode.success(Jwk(kid, typ, alg, pem))
 }
 
+/// Decodes a JWK set payload with a `keys` field.
 pub fn jwks_decoder() {
   use keys <- decode.field("keys", decode.list(jwk_decoder()))
 
   decode.success(keys)
 }
 
+/// Converts a persisted JWK into JOSE map values.
 pub fn to_map(jwk: Jwk) {
   let Jwk(pem: pem, ..) = jwk
 
@@ -30,6 +33,7 @@ pub fn to_map(jwk: Jwk) {
   |> jose.to_map()
 }
 
+/// Builds a persisted `Jwk` value from JOSE map values and explicit key id.
 pub fn from_map(kid: String, map: dict.Dict(String, String)) {
   let typ = dict.get(map, "typ") |> result.unwrap("JWT")
   let alg = dict.get(map, "alg") |> result.unwrap("RS256")
@@ -38,6 +42,7 @@ pub fn from_map(kid: String, map: dict.Dict(String, String)) {
   Ok(Jwk(kid, typ, alg, pem))
 }
 
+/// Generates a new RSA keypair and returns it as a persisted `Jwk`.
 pub fn generate() {
   let kid = uuid.v4_string()
 
