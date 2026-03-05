@@ -68,7 +68,7 @@
 
 ## Phase 7: Certification Traceability and Docs
 - [x] Map core test scenarios to Core tool-test objectives in the LTI certification guide.
-- [x] Update `docs/complete_lti_support/conformance_matrix.md` with core mapping rows.
+- [x] Update `docs/conformance_matrix.md` with core mapping rows.
 - [x] Update `README.md` launch flow docs for any provider/API additions.
 - [x] Add migration notes for provider implementers if interfaces changed.
 
@@ -84,7 +84,7 @@
 - `src/lightbulb/nonce.gleam` (optional)
 - `test/lightbulb/core_test.gleam` (new)
 - `test/lightbulb/providers/memory_provider/tables_test.gleam` (if provider persistence logic expands)
-- `docs/complete_lti_support/conformance_matrix.md`
+- `docs/conformance_matrix.md`
 - `README.md`
 
 ## Definition of Done

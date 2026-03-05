@@ -17,7 +17,6 @@ Production interoperability requires tolerant OAuth token handling and provider 
 - NFR-01
 - NFR-02
 - NFR-03
-- NFR-04
 
 ## 4. Success Criteria
 - Token path handles common platform response variations.

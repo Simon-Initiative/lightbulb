@@ -46,7 +46,7 @@
   - [x] Core section mappings
   - [x] AGS section mappings
   - [x] NRPS section mappings
-- [x] Update `docs/complete_lti_support/conformance_matrix.md` with oauth/provider coverage links.
+- [x] Update `docs/conformance_matrix.md` with oauth/provider coverage links.
 
 ## Phase 6: Documentation and Rollout
 - [x] Update README/service docs for:
@@ -71,7 +71,7 @@
 - `src/lightbulb/tool.gleam`
 - `test/lightbulb/services/access_token_test.gleam`
 - `test/lightbulb/providers/memory_provider/*`
-- `docs/complete_lti_support/conformance_matrix.md`
+- `docs/conformance_matrix.md`
 - `README.md`
 
 ## Definition of Done

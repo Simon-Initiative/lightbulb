@@ -20,7 +20,6 @@ AGS support is currently partial. Tools need complete line item, score, and resu
 - FR-AGS-03
 - FR-AGS-04
 - NFR-02
-- NFR-04
 - NFR-05
 
 ## 4. Success Criteria

@@ -60,7 +60,7 @@
   - [x] `6.2.4` response signature
   - [x] `6.2.5` required claims
   - [x] `6.2.6` response value affirmation support
-- [x] Update `docs/complete_lti_support/conformance_matrix.md` with deep_linking rows.
+- [x] Update `docs/conformance_matrix.md` with deep_linking rows.
 - [x] Update `README.md` with deep linking usage example.
 
 ## Cross-Feature Dependencies
@@ -68,7 +68,7 @@
 - `core`: deep-link request recognition and launch message-type validation is routed through core `validate_launch`.
 - `oauth_provider`: active key management and signing dependencies are shared with token/assertion infrastructure.
 - `ags`: optional `lineItem` payload support in deep-link content items should reuse AGS line item model decisions when available.
-- `certification`: Deep Linking cert objective mappings (`6.2.x`) must be represented in conformance matrix and evidence package.
+- `certification`: Deep Linking cert objective mappings (`6.2.x`) must be represented in the conformance matrix.
 
 ## File-Level Execution
 
@@ -78,7 +78,7 @@
 - `src/lightbulb/deep_linking/content_item.gleam` (new)
 - `test/lightbulb/deep_linking_test.gleam` (new)
 - `test/lightbulb/core_test.gleam` (new or expanded)
-- `docs/complete_lti_support/conformance_matrix.md`
+- `docs/conformance_matrix.md`
 - `README.md`
 
 ## Definition of Done

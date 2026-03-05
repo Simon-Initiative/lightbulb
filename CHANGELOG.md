@@ -50,16 +50,10 @@
     `fetch_memberships/3` still returns `List(Membership)` via default options.
 - Certification governance package (target: `2.0.0`):
   - Added schema-driven conformance matrix:
-    `docs/complete_lti_support/conformance_matrix.md`
-  - Added certification runbook:
-    `docs/complete_lti_support/certification_runbook.md`
-  - Added evidence package layout and dry-run records under:
-    `docs/complete_lti_support/evidence/`
-  - Added matrix lint automation:
-    `scripts/lint_conformance_matrix.sh`
+    `docs/conformance_matrix.md`
   - Added conformance-focused test modules under:
     `test/lightbulb/conformance/`
-  - CI now enforces matrix lint in `.github/workflows/test.yml`.
+  - CI runs conformance-focused tests in `.github/workflows/test.yml`.
 
 ### Bug Fixes
 

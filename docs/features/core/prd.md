@@ -22,7 +22,6 @@ Lightbulb must provide certification-grade LTI Core 1.3 launch handling. Current
 - NFR-01
 - NFR-02
 - NFR-03
-- NFR-04
 
 ## 4. Success Criteria
 - Required Core claim checks implemented and tested.

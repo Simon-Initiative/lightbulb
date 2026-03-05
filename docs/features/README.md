@@ -20,4 +20,3 @@ Each feature directory contains:
 - `ags/`
 - `nrps/`
 - `oauth_provider/`
-- `certification/`

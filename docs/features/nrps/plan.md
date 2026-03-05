@@ -56,7 +56,7 @@
   - [x] `5.3.3` access token handling for NRPS calls
   - [x] `5.3.4` members retrieval behavior
   - [x] `5.3.5` role-specific members retrieval behavior
-- [x] Map all NRPS tests in `docs/complete_lti_support/conformance_matrix.md`.
+- [x] Map all NRPS tests in `docs/conformance_matrix.md`.
 
 ## Phase 7: Documentation and Migration
 - [x] Update README NRPS examples to include options API and paging usage.
@@ -67,7 +67,7 @@
 - `core`: NRPS claim availability depends on launch claim parsing and validated launch context.
 - `oauth_provider`: NRPS access-token scope request and retrieval behavior depends on OAuth/client-assertion path.
 - `ags`: shared Link-header parser should remain consistent across AGS and NRPS pagination usage.
-- `certification`: NRPS objective mappings (`5.3.x`) and evidence links must be maintained in conformance artifacts.
+- `certification`: NRPS objective mappings (`5.3.x`) must be maintained in conformance artifacts.
 
 ## File-Level Execution
 - `src/lightbulb/services/nrps.gleam`
@@ -75,7 +75,7 @@
 - `src/lightbulb/http/link_header.gleam`
 - `test/lightbulb/services/nrps_test.gleam`
 - `test/lightbulb/services/nrps_paging_test.gleam` (new)
-- `docs/complete_lti_support/conformance_matrix.md`
+- `docs/conformance_matrix.md`
 - `README.md`
 
 ## Definition of Done

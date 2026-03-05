@@ -4,8 +4,9 @@ on:
   push:
     branches:
       - master
-      - main
   pull_request:
+    branches:
+      - master
 
 jobs:
   test:
@@ -19,6 +20,5 @@ jobs:
           rebar3-version: "3"
           elixir-version: "1.18.3"
       - run: gleam deps download
-      - run: scripts/lint_conformance_matrix.sh
       - run: gleam test
       - run: gleam format --check src test

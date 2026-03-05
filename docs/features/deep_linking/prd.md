@@ -18,7 +18,6 @@ Lightbulb needs full Deep Linking 2.0 support so tools can accept deep-link laun
 - FR-DL-02
 - NFR-01
 - NFR-02
-- NFR-04
 
 ## 4. Success Criteria
 - Typed deep-link request settings API available.

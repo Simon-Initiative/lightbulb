@@ -16,7 +16,6 @@ NRPS support must handle spec-correct claim decoding, tolerant member parsing, a
 - FR-NRPS-01
 - FR-NRPS-02
 - NFR-02
-- NFR-04
 - NFR-05
 
 ## 4. Success Criteria

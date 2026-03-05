@@ -63,7 +63,7 @@
   - [x] malformed result payload
   - [x] missing/insufficient scopes
   - [x] malformed link header
-- [x] Map all tests to AGS rows in `docs/complete_lti_support/conformance_matrix.md`.
+- [x] Map all tests to AGS rows in `docs/conformance_matrix.md`.
 - [x] Add AGS certification-targeted tests aligned to LTI cert guide section 5.4:
   - [x] `5.4.1` AGS claim availability handling
   - [x] `5.4.2` AGS endpoint claim handling
@@ -83,7 +83,7 @@
 - `core`: AGS claim extraction and launch validation prerequisites come from core launch handling.
 - `oauth_provider`: AGS scope request and token acquisition behavior depends on OAuth/client-assertion correctness.
 - `nrps`: shared Link-header parsing utility should be compatible with NRPS paging/differences handling.
-- `certification`: AGS objective mappings (`5.4.x`) and evidence links must be maintained in conformance artifacts.
+- `certification`: AGS objective mappings (`5.4.x`) must be maintained in conformance artifacts.
 
 ## File-Level Execution
 - `src/lightbulb/services/ags.gleam`
@@ -92,7 +92,7 @@
 - `src/lightbulb/http/link_header.gleam` (new)
 - `test/lightbulb/services/ags_test.gleam`
 - `test/lightbulb/services/ags_link_header_test.gleam` (new)
-- `docs/complete_lti_support/conformance_matrix.md`
+- `docs/conformance_matrix.md`
 - `README.md`
 
 ## Definition of Done
