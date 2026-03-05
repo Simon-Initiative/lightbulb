@@ -20,10 +20,10 @@ import lightbulb/errors.{NonceExpired, NonceInvalid, NonceReplayed}
 import lightbulb/jwk.{type Jwk}
 import lightbulb/nonce.{type Nonce, Nonce}
 import lightbulb/providers/data_provider.{
-  type DataProvider, type LaunchContextProvider, type LoginContext,
-  type ProviderError, LaunchContextInvalid, LaunchContextNotFound,
-  LaunchContextProvider, ProviderActiveJwkNotFound, ProviderCreateNonceFailed,
-  ProviderDeploymentNotFound, ProviderRegistrationNotFound, from_parts,
+  type DataProvider, type LoginContext, type ProviderError, DataProvider,
+  LaunchContextInvalid, LaunchContextNotFound, ProviderActiveJwkNotFound,
+  ProviderCreateNonceFailed, ProviderDeploymentNotFound,
+  ProviderRegistrationNotFound,
 }
 import lightbulb/providers/memory_provider/tables.{type Table}
 import lightbulb/registration.{type Registration}
@@ -346,8 +346,20 @@ pub fn cleanup(actor) {
 
 /// Builds a `DataProvider` adapter backed by the memory provider actor.
 pub fn data_provider(memory_provider) -> Result(DataProvider, ProviderError) {
-  let launch_context_provider: LaunchContextProvider =
-    LaunchContextProvider(
+  Ok(
+    DataProvider(
+      create_nonce: fn() {
+        create_nonce(memory_provider)
+        |> result.replace_error(ProviderCreateNonceFailed)
+      },
+      validate_nonce: fn(nonce) {
+        case validate_nonce_detailed(memory_provider, nonce) {
+          ValidNonce -> Ok(Nil)
+          ExpiredNonce -> Error(NonceExpired)
+          ReplayedNonce -> Error(NonceReplayed)
+          InvalidNonce -> Error(NonceInvalid)
+        }
+      },
       save_login_context: fn(context) {
         save_login_context(memory_provider, context)
         |> result.replace_error(LaunchContextInvalid)
@@ -360,34 +372,17 @@ pub fn data_provider(memory_provider) -> Result(DataProvider, ProviderError) {
         consume_login_context(memory_provider, state_key)
         |> result.replace_error(LaunchContextNotFound)
       },
-    )
-
-  Ok(
-    from_parts(
-      fn() {
-        create_nonce(memory_provider)
-        |> result.replace_error(ProviderCreateNonceFailed)
-      },
-      fn(nonce) {
-        case validate_nonce_detailed(memory_provider, nonce) {
-          ValidNonce -> Ok(Nil)
-          ExpiredNonce -> Error(NonceExpired)
-          ReplayedNonce -> Error(NonceReplayed)
-          InvalidNonce -> Error(NonceInvalid)
-        }
-      },
-      launch_context_provider,
-      fn(issuer, client_id) {
+      get_registration: fn(issuer, client_id) {
         get_registration_by(memory_provider, issuer, client_id)
         |> result.map(pair.second)
         |> result.replace_error(ProviderRegistrationNotFound)
       },
-      fn(issuer, client_id, deployment_id) {
+      get_deployment: fn(issuer, client_id, deployment_id) {
         get_deployment(memory_provider, issuer, client_id, deployment_id)
         |> result.map(pair.second)
         |> result.replace_error(ProviderDeploymentNotFound)
       },
-      fn() {
+      get_active_jwk: fn() {
         get_active_jwk(memory_provider)
         |> result.replace_error(ProviderActiveJwkNotFound)
       },

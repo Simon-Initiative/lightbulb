@@ -18,9 +18,6 @@ This changelog serves as release notes and is maintained as WIP until a release 
 - Optional OAuth token cache helper:
   - `services/access_token_cache` with cache keying, staleness checks, and
     `fetch_access_token_with_cache/4`.
-- Provider composition helper for login context:
-  - `providers/data_provider.LaunchContextProvider`
-  - `providers/data_provider.from_parts/6`
 - Replaced custom internal logger FFI implementation with the `logging` (`v1.3.0`)
   package while preserving `lightbulb/utils/logger` call sites.
 - AGS API expansion and hardening (target: `2.0.0`):
@@ -94,6 +91,11 @@ This changelog serves as release notes and is maintained as WIP until a release 
   - `save_login_context(LoginContext) -> Result(Nil, LaunchContextError)`
   - `get_login_context(String) -> Result(LoginContext, LaunchContextError)`
   - `consume_login_context(String) -> Result(Nil, LaunchContextError)`
+- Removed provider composition helper types/functions from public API:
+  - `providers/data_provider.LaunchContextProvider`
+  - `providers/data_provider.from_parts/6`
+- Migration for provider implementations:
+  - Construct `DataProvider(...)` directly instead of calling `from_parts/6`.
 - `DataProvider` provider operations now use typed provider errors:
   - `create_nonce() -> Result(Nonce, ProviderError)`
   - `get_registration(String, String) -> Result(Registration, ProviderError)`

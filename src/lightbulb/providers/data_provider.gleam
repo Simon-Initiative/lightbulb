@@ -6,10 +6,7 @@
 //// ## Example
 ////
 //// ```gleam
-//// import lightbulb/providers/data_provider.{
-////   type DataProvider, type LaunchContextProvider, LaunchContextProvider,
-////   from_parts,
-//// }
+//// import lightbulb/providers/data_provider.{type DataProvider}
 ////
 //// fn build_data_provider(
 ////   create_nonce,
@@ -21,20 +18,15 @@
 ////   get_deployment,
 ////   get_active_jwk,
 //// ) -> DataProvider {
-////   let launch_context: LaunchContextProvider =
-////     LaunchContextProvider(
-////       save_login_context: save_login_context,
-////       get_login_context: get_login_context,
-////       consume_login_context: consume_login_context,
-////     )
-////
-////   from_parts(
-////     create_nonce,
-////     validate_nonce,
-////     launch_context,
-////     get_registration,
-////     get_deployment,
-////     get_active_jwk,
+////   DataProvider(
+////     create_nonce: create_nonce,
+////     validate_nonce: validate_nonce,
+////     save_login_context: save_login_context,
+////     get_login_context: get_login_context,
+////     consume_login_context: consume_login_context,
+////     get_registration: get_registration,
+////     get_deployment: get_deployment,
+////     get_active_jwk: get_active_jwk,
 ////   )
 //// }
 //// ```
@@ -85,15 +77,6 @@ pub fn provider_error_to_string(error: ProviderError) -> String {
   }
 }
 
-/// Optional adapter surface for state/login-context storage semantics.
-pub type LaunchContextProvider {
-  LaunchContextProvider(
-    save_login_context: fn(LoginContext) -> Result(Nil, LaunchContextError),
-    get_login_context: fn(String) -> Result(LoginContext, LaunchContextError),
-    consume_login_context: fn(String) -> Result(Nil, LaunchContextError),
-  )
-}
-
 /// Represents a data provider that can handle various operations related to
 /// LTI (Learning Tools Interoperability) such as creating nonces,
 /// validating nonces, retrieving registrations, deployments, and active JWKs.
@@ -108,34 +91,5 @@ pub type DataProvider {
     get_deployment: fn(String, String, String) ->
       Result(Deployment, ProviderError),
     get_active_jwk: fn() -> Result(Jwk, ProviderError),
-  )
-}
-
-/// Adapter constructor that composes launch-context handlers with the remaining
-/// data-provider operations.
-pub fn from_parts(
-  create_nonce: fn() -> Result(Nonce, ProviderError),
-  validate_nonce: fn(String) -> Result(Nil, NonceError),
-  launch_context: LaunchContextProvider,
-  get_registration: fn(String, String) -> Result(Registration, ProviderError),
-  get_deployment: fn(String, String, String) ->
-    Result(Deployment, ProviderError),
-  get_active_jwk: fn() -> Result(Jwk, ProviderError),
-) -> DataProvider {
-  let LaunchContextProvider(
-    save_login_context: save_login_context,
-    get_login_context: get_login_context,
-    consume_login_context: consume_login_context,
-  ) = launch_context
-
-  DataProvider(
-    create_nonce: create_nonce,
-    validate_nonce: validate_nonce,
-    save_login_context: save_login_context,
-    get_login_context: get_login_context,
-    consume_login_context: consume_login_context,
-    get_registration: get_registration,
-    get_deployment: get_deployment,
-    get_active_jwk: get_active_jwk,
   )
 }
