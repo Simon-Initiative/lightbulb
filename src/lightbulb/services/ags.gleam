@@ -45,6 +45,7 @@
 ////   ags.post_score(http_provider, new_score, line_item, access_token)
 //// }
 //// ```
+
 import gleam/bool
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}

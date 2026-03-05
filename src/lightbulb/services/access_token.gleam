@@ -36,6 +36,7 @@
 ////   Ok(#(token, updated_cache))
 //// }
 //// ```
+
 import gleam/bool
 import gleam/dict
 import gleam/dynamic

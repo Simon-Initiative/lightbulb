@@ -19,6 +19,7 @@
 ////   })
 //// }
 //// ```
+
 import gleam/http/request.{type Request}
 import gleam/http/response.{type Response}
 
