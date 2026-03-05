@@ -144,13 +144,6 @@ This changelog serves as release notes and is maintained as WIP until a release 
     `family_name`, `middle_name`, `email`, `picture`, `lis_person_sourcedid`.
   - For filtering/paging flows, move from `fetch_memberships/3` to
     `fetch_memberships_with_options/4` and continuation helpers.
-- Migration for maintainers (certification workflow):
-  - Run `scripts/lint_conformance_matrix.sh` before `gleam test`.
-  - Keep requirement rows and test/evidence refs current in
-    `docs/complete_lti_support/conformance_matrix.md`.
-  - Capture dated evidence artifacts in
-    `docs/complete_lti_support/evidence/` and update
-    `last_verified_date` on affected rows.
 
 ## 1.0.0
 

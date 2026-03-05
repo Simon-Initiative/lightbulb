@@ -135,46 +135,13 @@ fn get_cookie(req: Request, name name: String) -> Result(String, Nil) {
 
 ### AGS (Assignments and Grades)
 
-`lightbulb/services/ags` now includes full AGS line-item CRUD, results retrieval,
+[AGS module](./lightbulb/services/ags.html) includes full AGS line-item CRUD, results retrieval,
 scope helpers, and pagination metadata support.
-
-Typed APIs:
-
-- `post_score/4`
-- `get_line_item/3`
-- `list_line_items/4 -> Result(Paged(LineItem), AgsError)`
-- `create_line_item/6`
-- `fetch_or_create_line_item/7`
-- `update_line_item/3`
-- `delete_line_item/3`
-- `list_results/4 -> Result(Paged(ags/result.Result), AgsError)`
-- Scope helpers: `can_read_line_items/1`, `can_write_line_items/1`,
-  `can_post_scores/1`, `can_read_results/1`
-- Guard helpers: `require_can_read_line_items/1`, `require_can_write_line_items/1`,
-  `require_can_post_scores/1`, `require_can_read_results/1`
-
-Compatibility note:
-
-- `grade_passback_available/1` now reflects score-post capability (`scope/score`),
-  not results-read capability.
-- `LineItem` includes AGS optional fields:
-  `resource_link_id`, `tag`, `start_date_time`, `end_date_time`, `grades_released`.
 
 ### NRPS (Names and Roles)
 
-`lightbulb/services/nrps` now provides typed NRPS APIs for claim decode,
+[NRPS module](./lightbulb/services/nrps.html) includes NRPS APIs for claim decode,
 scope checks, filtered membership fetches, and pagination links.
-
-Key APIs:
-
-- `get_nrps_claim/1 -> Result(NrpsClaim, NrpsError)`
-- `can_read_memberships/1` and `require_can_read_memberships/1`
-- `fetch_memberships_with_options/4 -> Result(MembershipsPage, NrpsError)`
-- `fetch_next_memberships_page/3`
-- `fetch_differences_memberships_page/3`
-
-`fetch_memberships/3` remains as a compatibility wrapper and returns only
-`List(Membership)` (it calls the options API with `default_memberships_query/0`).
 
 ```gleam
 import gleam/option
@@ -209,13 +176,10 @@ fn load_members(http_provider, claims, access_token) {
 }
 ```
 
-Migration note:
-
-- `Membership` now requires only `user_id` and `roles`; profile fields are optional:
-  `status`, `name`, `given_name`, `family_name`, `middle_name`, `email`,
-  `picture`, `lis_person_sourcedid`.
-
 ### Deep Linking
+
+[Deep Linking module](./lightbulb/deep_linking.html) includes support for decoding deep-link launch
+claims, building signed response JWTs, and constructing form-post payloads for the response.
 
 Deep-link launches can be decoded from validated launch claims, then answered with a
 signed Deep Linking response JWT and form-post payload.
@@ -279,7 +243,7 @@ fn build_deep_linking_response_html(data_provider, claims) {
 
 ### OAuth Service Tokens
 
-`lightbulb/services/access_token` provides:
+[OAuth Service Tokens module](./lightbulb/services/access_token.html) provides utilities for fetching and caching OAuth access tokens for LTI services (AGS, NRPS, etc.).
 
 - `fetch_access_token/3 -> Result(AccessToken, AccessTokenError)` for structured
   OAuth error handling (`OAuthError`, `HttpStatusError`, `DecodeError`, etc.).
@@ -300,8 +264,6 @@ Custom providers can compose launch-context storage separately via
 `lightbulb/providers/data_provider.LaunchContextProvider` and
 `data_provider.from_parts(...)`, while preserving the existing `DataProvider`
 shape consumed by `tool.oidc_login` and `tool.validate_launch`.
-Provider interfaces use typed errors (`LaunchContextError`, `ProviderError`)
-instead of string-coded error identifiers.
 
 ## Development
 
