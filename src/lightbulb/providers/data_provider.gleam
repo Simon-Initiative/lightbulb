@@ -1,3 +1,43 @@
+//// # Data Provider Interface
+////
+//// Storage/provider contracts required by `tool.oidc_login` and
+//// `tool.validate_launch`.
+////
+//// ## Example
+////
+//// ```gleam
+//// import lightbulb/providers/data_provider.{
+////   type DataProvider, type LaunchContextProvider, LaunchContextProvider,
+////   from_parts,
+//// }
+////
+//// fn build_data_provider(
+////   create_nonce,
+////   validate_nonce,
+////   save_login_context,
+////   get_login_context,
+////   consume_login_context,
+////   get_registration,
+////   get_deployment,
+////   get_active_jwk,
+//// ) -> DataProvider {
+////   let launch_context: LaunchContextProvider =
+////     LaunchContextProvider(
+////       save_login_context: save_login_context,
+////       get_login_context: get_login_context,
+////       consume_login_context: consume_login_context,
+////     )
+////
+////   from_parts(
+////     create_nonce,
+////     validate_nonce,
+////     launch_context,
+////     get_registration,
+////     get_deployment,
+////     get_active_jwk,
+////   )
+//// }
+//// ```
 import gleam/time/timestamp.{type Timestamp}
 import lightbulb/deployment.{type Deployment}
 import lightbulb/errors.{type NonceError}

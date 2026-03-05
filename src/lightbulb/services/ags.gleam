@@ -1,3 +1,50 @@
+//// # AGS Service
+////
+//// Helpers for calling LTI Assignment and Grade Services (AGS) endpoints.
+////
+//// ## Example
+////
+//// ```gleam
+//// import gleam/result
+//// import lightbulb/services/ags
+//// import lightbulb/services/ags/score
+////
+//// fn post_grade(
+////   http_provider,
+////   claims,
+////   access_token,
+////   resource_id: String,
+////   user_id: String,
+//// ) {
+////   use <- result.try(ags.require_can_write_line_items(claims))
+////   use <- result.try(ags.require_can_post_scores(claims))
+////   use service_url <- result.try(ags.get_line_items_service_url(claims))
+////
+////   use line_item <- result.try(
+////     ags.fetch_or_create_line_item(
+////       http_provider,
+////       service_url,
+////       resource_id,
+////       fn() { 100.0 },
+////       "Gradebook Item",
+////       access_token,
+////     ),
+////   )
+////
+////   let new_score =
+////     score.Score(
+////       score_given: 95.0,
+////       score_maximum: 100.0,
+////       timestamp: "2026-03-05T12:00:00Z",
+////       user_id: user_id,
+////       comment: "Great work",
+////       activity_progress: "Completed",
+////       grading_progress: "FullyGraded",
+////     )
+////
+////   ags.post_score(http_provider, new_score, line_item, access_token)
+//// }
+//// ```
 import gleam/bool
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}

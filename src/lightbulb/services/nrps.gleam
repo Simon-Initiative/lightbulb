@@ -1,3 +1,41 @@
+//// # NRPS Service
+////
+//// Helpers for calling LTI Names and Roles Provisioning Service (NRPS) endpoints.
+////
+//// ## Example
+////
+//// ```gleam
+//// import gleam/option
+//// import gleam/result
+//// import lightbulb/services/nrps
+////
+//// fn load_members(http_provider, claims, access_token) {
+////   use <- result.try(nrps.require_can_read_memberships(claims))
+////   use service_url <- result.try(nrps.get_membership_service_url(claims))
+////
+////   let query =
+////     nrps.MembershipsQuery(
+////       ..nrps.default_memberships_query(),
+////       role: option.Some("Instructor"),
+////       limit: option.Some(50),
+////     )
+////
+////   use page <- result.try(
+////     nrps.fetch_memberships_with_options(
+////       http_provider,
+////       service_url,
+////       query,
+////       access_token,
+////     ),
+////   )
+////
+////   let nrps.MembershipsPage(members: members, links: links) = page
+////
+////   // Follow `links.next` with `fetch_next_memberships_page/3` or
+////   // `links.differences` with `fetch_differences_memberships_page/3`.
+////   Ok(#(members, links))
+//// }
+//// ```
 import gleam/bool
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}

@@ -133,6 +133,18 @@ fn get_cookie(req: Request, name name: String) -> Result(String, Nil) {
 
 ```
 
+### Typical Integration Flow
+
+1. Implement required providers:
+   - `DataProvider`: [lightbulb/providers/data_provider](./lightbulb/providers/data_provider.html)
+   - `HttpProvider`: [lightbulb/providers/http_provider](./lightbulb/providers/http_provider.html)
+2. Handle OIDC login with `tool.oidc_login`.
+3. Validate launch requests with `tool.validate_launch`.
+4. Dispatch by LTI message type and feature:
+   - Resource link launches: AGS/NRPS flows as needed.
+   - Deep-link launches: decode settings and return a signed deep-link response.
+5. For service calls, fetch OAuth tokens via `services/access_token`.
+
 ### AGS (Assignments and Grades)
 
 [AGS module](./lightbulb/services/ags.html) includes full AGS line-item CRUD, results retrieval,
@@ -143,127 +155,29 @@ scope helpers, and pagination metadata support.
 [NRPS module](./lightbulb/services/nrps.html) includes NRPS APIs for claim decode,
 scope checks, filtered membership fetches, and pagination links.
 
-```gleam
-import gleam/option
-import gleam/result
-import lightbulb/services/nrps
-
-fn load_members(http_provider, claims, access_token) {
-  use <- result.try(nrps.require_can_read_memberships(claims))
-  use service_url <- result.try(nrps.get_membership_service_url(claims))
-
-  let query =
-    nrps.MembershipsQuery(
-      ..nrps.default_memberships_query(),
-      role: option.Some("Instructor"),
-      limit: option.Some(50),
-    )
-
-  use page <- result.try(
-    nrps.fetch_memberships_with_options(
-      http_provider,
-      service_url,
-      query,
-      access_token,
-    ),
-  )
-
-  let nrps.MembershipsPage(members: members, links: links) = page
-
-  // Follow `links.next` with `fetch_next_memberships_page/3` or
-  // `links.differences` with `fetch_differences_memberships_page/3`.
-  Ok(#(members, links))
-}
-```
-
 ### Deep Linking
 
 [Deep Linking module](./lightbulb/deep_linking.html) includes support for decoding deep-link launch
 claims, building signed response JWTs, and constructing form-post payloads for the response.
 
-Deep-link launches can be decoded from validated launch claims, then answered with a
-signed Deep Linking response JWT and form-post payload.
-
-```gleam
-import gleam/http/response
-import gleam/option
-import gleam/result
-import lightbulb/deep_linking
-import lightbulb/deep_linking/content_item
-import lightbulb/errors
-import wisp.{type Request, type Response}
-
-pub fn deep_linking_response(
-  _req: Request,
-  data_provider,
-  claims,
-) -> Response {
-  case build_deep_linking_response_html(data_provider, claims) {
-    Ok(html) ->
-      wisp.ok()
-      |> response.set_header("content-type", "text/html; charset=utf-8")
-      |> wisp.string_body(html)
-
-    Error(error) ->
-      wisp.bad_request()
-      |> wisp.string_body(
-        "Deep linking response failed: "
-        <> errors.deep_linking_error_to_string(error),
-      )
-  }
-}
-
-fn build_deep_linking_response_html(data_provider, claims) {
-  use settings <- result.try(deep_linking.get_deep_linking_settings(claims))
-  use active_jwk <- result.try(data_provider.get_active_jwk())
-
-  let items = [
-    content_item.lti_resource_link(
-      option.Some("https://tool.example.com/launch/resource-1"),
-      option.Some("Resource 1"),
-      option.None,
-      option.None,
-      option.None,
-    ),
-  ]
-
-  use jwt <- result.try(
-    deep_linking.build_response_jwt(
-      request_claims: claims,
-      settings: settings,
-      items: items,
-      options: deep_linking.default_response_options(),
-      active_jwk: active_jwk,
-    ),
-  )
-
-  deep_linking.build_response_form_post(settings.deep_link_return_url, jwt)
-}
-```
-
 ### OAuth Service Tokens
 
 [OAuth Service Tokens module](./lightbulb/services/access_token.html) provides utilities for fetching and caching OAuth access tokens for LTI services (AGS, NRPS, etc.).
 
-- `fetch_access_token/3 -> Result(AccessToken, AccessTokenError)` for structured
-  OAuth error handling (`OAuthError`, `HttpStatusError`, `DecodeError`, etc.).
+### Data Providers
 
-Optional token caching is available in `lightbulb/services/access_token_cache`:
+`lightbulb` requires two provider interfaces:
 
-- `TokenCacheKey` keyed by issuer/client/scopes.
-- `fetch_access_token_with_cache/4` wrapper for cache hit/miss/stale refresh flows.
+- `DataProvider` for nonce, launch context, registration/deployment, and JWK
+  persistence used by OIDC login and launch validation.
+- `HttpProvider` for outbound HTTP transport used by service modules (AGS, NRPS,
+  OAuth token requests).
 
-For custom assertion audience/TTL, use:
+See module documentation:
 
-- `default_assertion_options/0`
-- `fetch_access_token_with_options/4`
-
-### DataProvider Adapter
-
-Custom providers can compose launch-context storage separately via
-`lightbulb/providers/data_provider.LaunchContextProvider` and
-`data_provider.from_parts(...)`, while preserving the existing `DataProvider`
-shape consumed by `tool.oidc_login` and `tool.validate_launch`.
+- [Data Provider module](./lightbulb/providers/data_provider.html)
+- [HTTP Provider module](./lightbulb/providers/http_provider.html)
+- [Memory Provider module](./lightbulb/providers/memory_provider.html) (in-memory implementation for development/testing)
 
 ## Development
 

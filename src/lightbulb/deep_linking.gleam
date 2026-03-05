@@ -1,3 +1,65 @@
+//// # Deep Linking
+////
+//// Deep Linking 2.0 helpers for decoding settings and building response JWTs.
+////
+//// ## Example
+////
+//// ```gleam
+//// import gleam/http/response
+//// import gleam/option
+//// import gleam/result
+//// import lightbulb/deep_linking
+//// import lightbulb/deep_linking/content_item
+//// import lightbulb/errors
+//// import wisp.{type Request, type Response}
+////
+//// pub fn deep_linking_response(
+////   _req: Request,
+////   data_provider,
+////   claims,
+//// ) -> Response {
+////   case build_deep_linking_response_html(data_provider, claims) {
+////     Ok(html) ->
+////       wisp.ok()
+////       |> response.set_header("content-type", "text/html; charset=utf-8")
+////       |> wisp.string_body(html)
+////
+////     Error(error) ->
+////       wisp.bad_request()
+////       |> wisp.string_body(
+////         "Deep linking response failed: "
+////         <> errors.deep_linking_error_to_string(error),
+////       )
+////   }
+//// }
+////
+//// fn build_deep_linking_response_html(data_provider, claims) {
+////   use settings <- result.try(deep_linking.get_deep_linking_settings(claims))
+////   use active_jwk <- result.try(data_provider.get_active_jwk())
+////
+////   let items = [
+////     content_item.lti_resource_link(
+////       option.Some("https://tool.example.com/launch/resource-1"),
+////       option.Some("Resource 1"),
+////       option.None,
+////       option.None,
+////       option.None,
+////     ),
+////   ]
+////
+////   use jwt <- result.try(
+////     deep_linking.build_response_jwt(
+////       request_claims: claims,
+////       settings: settings,
+////       items: items,
+////       options: deep_linking.default_response_options(),
+////       active_jwk: active_jwk,
+////     ),
+////   )
+////
+////   deep_linking.build_response_form_post(settings.deep_link_return_url, jwt)
+//// }
+//// ```
 import gleam/dict
 import gleam/dynamic
 import gleam/dynamic/decode

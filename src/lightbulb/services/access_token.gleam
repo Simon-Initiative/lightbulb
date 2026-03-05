@@ -1,3 +1,41 @@
+//// # Access Token Service
+////
+//// OAuth2 client-credentials helpers for obtaining LTI service access tokens.
+////
+//// ## Example
+////
+//// ```gleam
+//// import gleam/result
+//// import lightbulb/services/access_token
+//// import lightbulb/services/access_token_cache
+////
+//// fn fetch_ags_token(
+////   cache: access_token_cache.TokenCache,
+////   providers,
+////   registration,
+//// ) {
+////   let scopes = [
+////     "https://purl.imsglobal.org/spec/lti-ags/scope/score",
+////   ]
+////
+////   // Cached flow:
+////   use #(token, updated_cache) <- result.try(
+////     access_token_cache.fetch_access_token_with_cache(
+////       cache,
+////       providers,
+////       registration,
+////       scopes,
+////     ),
+////   )
+////
+////   // Direct flow (without cache):
+////   // use token <- result.try(
+////   //   access_token.fetch_access_token(providers, registration, scopes)
+////   // )
+////
+////   Ok(#(token, updated_cache))
+//// }
+//// ```
 import gleam/bool
 import gleam/dict
 import gleam/dynamic
