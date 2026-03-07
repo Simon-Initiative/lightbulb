@@ -8,6 +8,15 @@
   handling, nonce hardening, and state/target-link consistency enforcement.
 - Deep Linking support for decoding deep-link launches and building signed response
   JWT/form-post payloads.
+- Deep Linking JWT profiles:
+  - Added profile-aware response JWT API:
+    `deep_linking.build_response_jwt_with_profile/6`
+  - Added profile types:
+    `deep_linking.ResponseJwtProfile` (`Standard`, `Canvas`, `Custom`)
+    and `deep_linking.ResponseJwtContext`
+  - Added built-in Canvas claim transform:
+    `iss/sub/azp = client_id`, `aud = platform_issuer`
+  - Added final-claims validation for profile output before signing.
 - Service integrations for AGS and NRPS workflows.
 - OAuth service token typed API and error taxonomy:
   - `services/access_token.fetch_access_token/3`
@@ -76,6 +85,8 @@
   instead of results-read capability.
 - NRPS membership decode now tolerates minimal valid member payloads and no longer
   requires non-normative claim fields (`errors`, `validation_context`).
+- Deep-link profile transforms now fail safely with typed errors instead of
+  producing malformed JWT payloads.
 
 ### Breaking Changes
 
@@ -100,8 +111,19 @@
 - Deep Linking APIs now return `DeepLinkingError` instead of string error IDs:
   - `deep_linking.get_deep_linking_settings/1`
   - `deep_linking.build_response_jwt/5`
+  - `deep_linking.build_response_jwt_with_profile/6`
   - `deep_linking.build_response_form_post/2`
   - `deep_linking/content_item.validate_items/2`
+- Deep-linking migration notes for JWT profiles:
+  - Existing `build_response_jwt/5` callers do not need to change code.
+  - To adopt LMS-specific shaping, switch to:
+    `build_response_jwt_with_profile(..., deep_linking.Canvas)` for Canvas, or
+    `build_response_jwt_with_profile(..., deep_linking.Custom(fn(...) { ... }))`
+    for custom claim transforms.
+  - Handle new deep-linking error variants where relevant:
+    `DeepLinkingProfileInvalid`,
+    `DeepLinkingProfileClaimMissing(claim)`,
+    `DeepLinkingProfileClaimInvalid(claim)`.
 - `DataProvider.validate_nonce/1` now returns `Result(Nil, NonceError)` and must map
   nonce outcomes to explicit variants (`NonceInvalid`, `NonceExpired`, `NonceReplayed`).
 - Clients relying on string matching should migrate to variant matching, or explicitly

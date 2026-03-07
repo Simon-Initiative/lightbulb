@@ -160,6 +160,44 @@ scope checks, filtered membership fetches, and pagination links.
 [Deep Linking module](./lightbulb/deep_linking.html) includes support for decoding deep-link launch
 claims, building signed response JWTs, and constructing form-post payloads for the response.
 
+Use response JWT profiles when you need LMS-specific deep-link JWT semantics:
+
+- `deep_linking.Standard`: default standards-oriented behavior (same as `build_response_jwt`).
+- `deep_linking.Canvas`: Canvas-compatible identity claims.
+- `deep_linking.Custom(fn(claims, context) { ... })`: custom claim transforms.
+
+Example profile selection by issuer:
+
+```gleam
+import gleam/string
+import lightbulb/deep_linking
+
+fn choose_profile(issuer: String) -> deep_linking.ResponseJwtProfile {
+  case string.contains(string.lowercase(issuer), "instructure.com") {
+    True -> deep_linking.Canvas
+    False -> deep_linking.Standard
+  }
+}
+```
+
+Example JWT build with profile:
+
+```gleam
+deep_linking.build_response_jwt_with_profile(
+  claims,
+  settings,
+  items,
+  deep_linking.default_response_options(),
+  active_jwk,
+  choose_profile(platform_issuer),
+)
+```
+
+Migration note:
+
+- Existing `build_response_jwt` callers require no changes; the function retains prior behavior.
+- Adopt `build_response_jwt_with_profile` only when LMS-specific shaping is required.
+
 ### OAuth Service Tokens
 
 [OAuth Service Tokens module](./lightbulb/services/access_token.html) provides utilities for fetching and caching OAuth access tokens for LTI services (AGS, NRPS, etc.).

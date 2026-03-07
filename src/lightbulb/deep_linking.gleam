@@ -75,7 +75,9 @@ import lightbulb/deep_linking/content_item.{type ContentItem}
 import lightbulb/deep_linking/settings.{type DeepLinkingSettings}
 import lightbulb/errors.{
   type DeepLinkingError, DeepLinkingClaimInvalid, DeepLinkingClaimMissing,
-  DeepLinkingResponseInvalidReturnUrl, DeepLinkingResponseSigningFailed,
+  DeepLinkingProfileClaimInvalid, DeepLinkingProfileClaimMissing,
+  DeepLinkingProfileInvalid, DeepLinkingResponseInvalidReturnUrl,
+  DeepLinkingResponseSigningFailed,
 }
 import lightbulb/jose
 import lightbulb/jwk.{type Jwk}
@@ -112,6 +114,24 @@ pub type DeepLinkingResponseOptions {
     errorlog: Option(String),
     ttl_seconds: Int,
   )
+}
+
+pub type ResponseJwtContext {
+  ResponseJwtContext(
+    request_claims: jose.Claims,
+    settings: DeepLinkingSettings,
+    items: List(ContentItem),
+    options: DeepLinkingResponseOptions,
+  )
+}
+
+pub type ClaimTransform =
+  fn(jose.Claims, ResponseJwtContext) -> Result(jose.Claims, DeepLinkingError)
+
+pub type ResponseJwtProfile {
+  Standard
+  Canvas
+  Custom(transform: ClaimTransform)
 }
 
 /// Returns default options for deep-linking responses.
@@ -157,56 +177,50 @@ pub fn build_response_jwt(
   options: DeepLinkingResponseOptions,
   active_jwk: Jwk,
 ) -> Result(String, DeepLinkingError) {
+  build_response_jwt_with_profile(
+    request_claims,
+    settings,
+    items,
+    options,
+    active_jwk,
+    Standard,
+  )
+}
+
+/// Builds and signs a Deep Linking response JWT with a claim-shaping profile.
+///
+/// Profiles:
+/// - `Standard`: current/default claim shape.
+/// - `Canvas`: Canvas-compatible identity claim shape.
+/// - `Custom`: caller-provided transform over standard claims.
+pub fn build_response_jwt_with_profile(
+  request_claims: jose.Claims,
+  settings: DeepLinkingSettings,
+  items: List(ContentItem),
+  options: DeepLinkingResponseOptions,
+  active_jwk: Jwk,
+  profile: ResponseJwtProfile,
+) -> Result(String, DeepLinkingError) {
   use _ <- result.try(validate_return_url(settings.deep_link_return_url))
   use _ <- result.try(content_item.validate_items(settings, items))
-  use iss <- result.try(required_claim_string(request_claims, "iss"))
-  use deployment_id <- result.try(required_claim_string(
+  use base_claims <- result.try(build_standard_response_claims(
     request_claims,
-    claim_deployment_id,
+    settings,
+    items,
+    options,
+  ))
+  let context = ResponseJwtContext(request_claims, settings, items, options)
+  use transformed_claims <- result.try(apply_profile_transform(
+    base_claims,
+    context,
+    profile,
+  ))
+  use _ <- result.try(validate_final_response_claims(
+    transformed_claims,
+    profile,
   ))
 
-  let base_claims =
-    dict.from_list([
-      #("aud", dynamic.string(iss)),
-      #(
-        claim_message_type,
-        dynamic.string(lti_message_type_deep_linking_response),
-      ),
-      #(claim_version, dynamic.string(lti_version)),
-      #(claim_deployment_id, dynamic.string(deployment_id)),
-      #(
-        "iat",
-        timestamp.system_time()
-          |> unix_seconds
-          |> dynamic.int,
-      ),
-      #(
-        "exp",
-        timestamp.system_time()
-          |> timestamp.add(duration.seconds(options.ttl_seconds))
-          |> unix_seconds
-          |> dynamic.int(),
-      ),
-    ])
-
-  let claims =
-    base_claims
-    |> maybe_add_optional(settings.data, claim_data, dynamic.string)
-    |> maybe_add_optional(
-      case items != [] {
-        True ->
-          option.Some(dynamic.list(list.map(items, content_item.to_dynamic)))
-        False -> option.None
-      },
-      claim_content_items,
-      fn(value) { value },
-    )
-    |> maybe_add_optional(options.msg, claim_msg, dynamic.string)
-    |> maybe_add_optional(options.log, claim_log, dynamic.string)
-    |> maybe_add_optional(options.errormsg, claim_errormsg, dynamic.string)
-    |> maybe_add_optional(options.errorlog, claim_errorlog, dynamic.string)
-
-  sign_claims(claims, active_jwk)
+  sign_claims(transformed_claims, active_jwk)
 }
 
 /// Builds an auto-submit HTML form that POSTs the response JWT to the platform.
@@ -244,6 +258,162 @@ fn validate_return_url(url: String) -> Result(Nil, DeepLinkingError) {
   }
 }
 
+fn build_standard_response_claims(
+  request_claims request_claims: jose.Claims,
+  settings settings: DeepLinkingSettings,
+  items items: List(ContentItem),
+  options options: DeepLinkingResponseOptions,
+) -> Result(jose.Claims, DeepLinkingError) {
+  use platform_issuer <- result.try(required_claim_string(request_claims, "iss"))
+  use deployment_id <- result.try(required_claim_string(
+    request_claims,
+    claim_deployment_id,
+  ))
+
+  Ok(
+    dict.from_list([
+      #("aud", dynamic.string(platform_issuer)),
+      #(
+        claim_message_type,
+        dynamic.string(lti_message_type_deep_linking_response),
+      ),
+      #(claim_version, dynamic.string(lti_version)),
+      #(claim_deployment_id, dynamic.string(deployment_id)),
+      #(
+        "iat",
+        timestamp.system_time()
+          |> unix_seconds
+          |> dynamic.int,
+      ),
+      #(
+        "exp",
+        timestamp.system_time()
+          |> timestamp.add(duration.seconds(options.ttl_seconds))
+          |> unix_seconds
+          |> dynamic.int(),
+      ),
+    ])
+    |> maybe_add_optional(settings.data, claim_data, dynamic.string)
+    |> maybe_add_optional(
+      case items != [] {
+        True ->
+          option.Some(dynamic.list(list.map(items, content_item.to_dynamic)))
+        False -> option.None
+      },
+      claim_content_items,
+      fn(value) { value },
+    )
+    |> maybe_add_optional(options.msg, claim_msg, dynamic.string)
+    |> maybe_add_optional(options.log, claim_log, dynamic.string)
+    |> maybe_add_optional(options.errormsg, claim_errormsg, dynamic.string)
+    |> maybe_add_optional(options.errorlog, claim_errorlog, dynamic.string),
+  )
+}
+
+fn apply_profile_transform(
+  base_claims: jose.Claims,
+  context: ResponseJwtContext,
+  profile: ResponseJwtProfile,
+) -> Result(jose.Claims, DeepLinkingError) {
+  case profile {
+    Standard -> Ok(base_claims)
+    Canvas -> apply_canvas_transform(base_claims, context.request_claims)
+    Custom(transform) ->
+      transform(base_claims, context)
+      |> result.map_error(normalize_custom_profile_error)
+  }
+}
+
+fn apply_canvas_transform(
+  base_claims: jose.Claims,
+  request_claims: jose.Claims,
+) -> Result(jose.Claims, DeepLinkingError) {
+  use platform_issuer <- result.try(required_profile_claim_string(
+    request_claims,
+    "iss",
+  ))
+  use client_id <- result.try(resolve_request_client_id(request_claims))
+
+  Ok(
+    base_claims
+    |> dict.insert("iss", dynamic.string(client_id))
+    |> dict.insert("sub", dynamic.string(client_id))
+    |> dict.insert("aud", dynamic.string(platform_issuer))
+    |> dict.insert("azp", dynamic.string(client_id)),
+  )
+}
+
+fn resolve_request_client_id(
+  request_claims: jose.Claims,
+) -> Result(String, DeepLinkingError) {
+  use raw_aud <- result.try(
+    dict.get(request_claims, "aud")
+    |> result.map_error(fn(_) { DeepLinkingProfileClaimMissing("aud") }),
+  )
+
+  case decode.run(raw_aud, decode.string) {
+    Ok(single) -> Ok(single)
+    Error(_) -> {
+      case decode.run(raw_aud, decode.list(decode.string)) {
+        Ok([first, ..]) -> Ok(first)
+        Ok([]) -> Error(DeepLinkingProfileClaimInvalid("aud"))
+        Error(_) -> Error(DeepLinkingProfileClaimInvalid("aud"))
+      }
+    }
+  }
+}
+
+fn normalize_custom_profile_error(error: DeepLinkingError) -> DeepLinkingError {
+  case error {
+    DeepLinkingProfileInvalid
+    | DeepLinkingProfileClaimMissing(_)
+    | DeepLinkingProfileClaimInvalid(_) -> error
+    _ -> DeepLinkingProfileInvalid
+  }
+}
+
+fn validate_final_response_claims(
+  claims: jose.Claims,
+  profile: ResponseJwtProfile,
+) -> Result(Nil, DeepLinkingError) {
+  use _ <- result.try(
+    validate_required_string_claims(claims, [
+      "aud",
+      claim_message_type,
+      claim_version,
+      claim_deployment_id,
+    ]),
+  )
+  use _ <- result.try(validate_required_int_claims(claims, ["iat", "exp"]))
+
+  case profile {
+    Canvas -> validate_required_string_claims(claims, ["iss", "sub", "azp"])
+    _ -> Ok(Nil)
+  }
+}
+
+fn validate_required_string_claims(
+  claims: jose.Claims,
+  claim_names: List(String),
+) -> Result(Nil, DeepLinkingError) {
+  list.fold(claim_names, Ok(Nil), fn(acc, claim_name) {
+    use _ <- result.try(acc)
+    use _ <- result.try(required_profile_claim_string(claims, claim_name))
+    Ok(Nil)
+  })
+}
+
+fn validate_required_int_claims(
+  claims: jose.Claims,
+  claim_names: List(String),
+) -> Result(Nil, DeepLinkingError) {
+  list.fold(claim_names, Ok(Nil), fn(acc, claim_name) {
+    use _ <- result.try(acc)
+    use _ <- result.try(required_profile_claim_int(claims, claim_name))
+    Ok(Nil)
+  })
+}
+
 fn sign_claims(
   claims: dict.Dict(String, dynamic.Dynamic),
   active_jwk: Jwk,
@@ -275,6 +445,32 @@ fn required_claim_string(
     decode.run(raw, decode.string)
     |> result.map_error(fn(_) { DeepLinkingClaimInvalid })
   })
+}
+
+fn required_profile_claim_string(
+  claims: jose.Claims,
+  claim_name: String,
+) -> Result(String, DeepLinkingError) {
+  use raw <- result.try(
+    dict.get(claims, claim_name)
+    |> result.map_error(fn(_) { DeepLinkingProfileClaimMissing(claim_name) }),
+  )
+
+  decode.run(raw, decode.string)
+  |> result.map_error(fn(_) { DeepLinkingProfileClaimInvalid(claim_name) })
+}
+
+fn required_profile_claim_int(
+  claims: jose.Claims,
+  claim_name: String,
+) -> Result(Int, DeepLinkingError) {
+  use raw <- result.try(
+    dict.get(claims, claim_name)
+    |> result.map_error(fn(_) { DeepLinkingProfileClaimMissing(claim_name) }),
+  )
+
+  decode.run(raw, decode.int)
+  |> result.map_error(fn(_) { DeepLinkingProfileClaimInvalid(claim_name) })
 }
 
 fn maybe_add_optional(

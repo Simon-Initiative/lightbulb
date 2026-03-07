@@ -111,6 +111,261 @@ pub fn build_response_jwt_test() {
   |> should.equal(Ok(active_jwk.kid))
 }
 
+pub fn build_response_jwt_with_standard_profile_test() {
+  let assert Ok(active_jwk) = jwk.generate()
+
+  let request_claims =
+    dict.from_list([
+      #("iss", dynamic.string("https://platform.example.com")),
+      #("aud", dynamic.string("tool-client-id")),
+      #(deep_linking.claim_deployment_id, dynamic.string("deployment-123")),
+    ])
+
+  let assert Ok(settings) =
+    deep_linking.get_deep_linking_settings(
+      dict.from_list([
+        #(settings.claim_deep_linking_settings, dynamic_settings_claim()),
+      ]),
+    )
+
+  let assert Ok(jwt) =
+    deep_linking.build_response_jwt_with_profile(
+      request_claims,
+      settings,
+      [],
+      deep_linking.default_response_options(),
+      active_jwk,
+      deep_linking.Standard,
+    )
+
+  let #(_, public_jwk_map) = active_jwk |> jwk.to_map()
+  let #(verified, verified_jwt, _) =
+    jose.verify(jose.to_public(jose.from_map(public_jwk_map)), jwt)
+
+  verified
+  |> should.be_true()
+
+  decode_claim_string(verified_jwt.claims, "aud")
+  |> should.equal(Ok("https://platform.example.com"))
+
+  decode_claim_string(verified_jwt.claims, "iss")
+  |> should.equal(Error("missing"))
+
+  decode_claim_string(verified_jwt.claims, "azp")
+  |> should.equal(Error("missing"))
+}
+
+pub fn build_response_jwt_with_canvas_profile_test() {
+  let assert Ok(active_jwk) = jwk.generate()
+
+  let request_claims =
+    dict.from_list([
+      #("iss", dynamic.string("https://canvas.instructure.com")),
+      #("aud", dynamic.list([dynamic.string("canvas-client-id")])),
+      #(deep_linking.claim_deployment_id, dynamic.string("deployment-123")),
+    ])
+
+  let assert Ok(settings) =
+    deep_linking.get_deep_linking_settings(
+      dict.from_list([
+        #(settings.claim_deep_linking_settings, dynamic_settings_claim()),
+      ]),
+    )
+
+  let assert Ok(jwt) =
+    deep_linking.build_response_jwt_with_profile(
+      request_claims,
+      settings,
+      [],
+      deep_linking.default_response_options(),
+      active_jwk,
+      deep_linking.Canvas,
+    )
+
+  let #(_, public_jwk_map) = active_jwk |> jwk.to_map()
+  let #(verified, verified_jwt, _) =
+    jose.verify(jose.to_public(jose.from_map(public_jwk_map)), jwt)
+
+  verified
+  |> should.be_true()
+
+  decode_claim_string(verified_jwt.claims, "iss")
+  |> should.equal(Ok("canvas-client-id"))
+
+  decode_claim_string(verified_jwt.claims, "sub")
+  |> should.equal(Ok("canvas-client-id"))
+
+  decode_claim_string(verified_jwt.claims, "azp")
+  |> should.equal(Ok("canvas-client-id"))
+
+  decode_claim_string(verified_jwt.claims, "aud")
+  |> should.equal(Ok("https://canvas.instructure.com"))
+}
+
+pub fn build_response_jwt_with_canvas_profile_missing_issuer_test() {
+  let assert Ok(active_jwk) = jwk.generate()
+
+  let request_claims =
+    dict.from_list([
+      #("aud", dynamic.string("canvas-client-id")),
+      #(deep_linking.claim_deployment_id, dynamic.string("deployment-123")),
+    ])
+
+  let assert Ok(settings) =
+    deep_linking.get_deep_linking_settings(
+      dict.from_list([
+        #(settings.claim_deep_linking_settings, dynamic_settings_claim()),
+      ]),
+    )
+
+  deep_linking.build_response_jwt_with_profile(
+    request_claims,
+    settings,
+    [],
+    deep_linking.default_response_options(),
+    active_jwk,
+    deep_linking.Canvas,
+  )
+  |> should.equal(Error(errors.DeepLinkingClaimMissing))
+}
+
+pub fn build_response_jwt_with_canvas_profile_invalid_aud_list_test() {
+  let assert Ok(active_jwk) = jwk.generate()
+
+  let request_claims =
+    dict.from_list([
+      #("iss", dynamic.string("https://canvas.instructure.com")),
+      #("aud", dynamic.list([])),
+      #(deep_linking.claim_deployment_id, dynamic.string("deployment-123")),
+    ])
+
+  let assert Ok(settings) =
+    deep_linking.get_deep_linking_settings(
+      dict.from_list([
+        #(settings.claim_deep_linking_settings, dynamic_settings_claim()),
+      ]),
+    )
+
+  deep_linking.build_response_jwt_with_profile(
+    request_claims,
+    settings,
+    [],
+    deep_linking.default_response_options(),
+    active_jwk,
+    deep_linking.Canvas,
+  )
+  |> should.equal(Error(errors.DeepLinkingProfileClaimInvalid("aud")))
+}
+
+pub fn build_response_jwt_with_custom_profile_test() {
+  let assert Ok(active_jwk) = jwk.generate()
+
+  let request_claims =
+    dict.from_list([
+      #("iss", dynamic.string("https://platform.example.com")),
+      #("aud", dynamic.string("tool-client-id")),
+      #(deep_linking.claim_deployment_id, dynamic.string("deployment-123")),
+    ])
+
+  let assert Ok(settings) =
+    deep_linking.get_deep_linking_settings(
+      dict.from_list([
+        #(settings.claim_deep_linking_settings, dynamic_settings_claim()),
+      ]),
+    )
+
+  let custom_profile: deep_linking.ResponseJwtProfile =
+    deep_linking.Custom(fn(base_claims, _context) {
+      Ok(dict.insert(base_claims, "iss", dynamic.string("custom-issuer")))
+    })
+
+  let assert Ok(jwt) =
+    deep_linking.build_response_jwt_with_profile(
+      request_claims,
+      settings,
+      [],
+      deep_linking.default_response_options(),
+      active_jwk,
+      custom_profile,
+    )
+
+  let #(_, public_jwk_map) = active_jwk |> jwk.to_map()
+  let #(verified, verified_jwt, _) =
+    jose.verify(jose.to_public(jose.from_map(public_jwk_map)), jwt)
+
+  verified
+  |> should.be_true()
+
+  decode_claim_string(verified_jwt.claims, "iss")
+  |> should.equal(Ok("custom-issuer"))
+}
+
+pub fn build_response_jwt_with_custom_profile_invalid_output_test() {
+  let assert Ok(active_jwk) = jwk.generate()
+
+  let request_claims =
+    dict.from_list([
+      #("iss", dynamic.string("https://platform.example.com")),
+      #("aud", dynamic.string("tool-client-id")),
+      #(deep_linking.claim_deployment_id, dynamic.string("deployment-123")),
+    ])
+
+  let assert Ok(settings) =
+    deep_linking.get_deep_linking_settings(
+      dict.from_list([
+        #(settings.claim_deep_linking_settings, dynamic_settings_claim()),
+      ]),
+    )
+
+  let custom_profile: deep_linking.ResponseJwtProfile =
+    deep_linking.Custom(fn(base_claims, _context) {
+      Ok(dict.delete(base_claims, "aud"))
+    })
+
+  deep_linking.build_response_jwt_with_profile(
+    request_claims,
+    settings,
+    [],
+    deep_linking.default_response_options(),
+    active_jwk,
+    custom_profile,
+  )
+  |> should.equal(Error(errors.DeepLinkingProfileClaimMissing("aud")))
+}
+
+pub fn build_response_jwt_with_custom_profile_failure_mapped_test() {
+  let assert Ok(active_jwk) = jwk.generate()
+
+  let request_claims =
+    dict.from_list([
+      #("iss", dynamic.string("https://platform.example.com")),
+      #("aud", dynamic.string("tool-client-id")),
+      #(deep_linking.claim_deployment_id, dynamic.string("deployment-123")),
+    ])
+
+  let assert Ok(settings) =
+    deep_linking.get_deep_linking_settings(
+      dict.from_list([
+        #(settings.claim_deep_linking_settings, dynamic_settings_claim()),
+      ]),
+    )
+
+  let custom_profile: deep_linking.ResponseJwtProfile =
+    deep_linking.Custom(fn(_base_claims, _context) {
+      Error(errors.DeepLinkingClaimInvalid)
+    })
+
+  deep_linking.build_response_jwt_with_profile(
+    request_claims,
+    settings,
+    [],
+    deep_linking.default_response_options(),
+    active_jwk,
+    custom_profile,
+  )
+  |> should.equal(Error(errors.DeepLinkingProfileInvalid))
+}
+
 pub fn build_response_jwt_rejects_invalid_item_type_test() {
   let assert Ok(active_jwk) = jwk.generate()
 
@@ -308,6 +563,13 @@ pub fn build_response_form_post_invalid_url_test() {
 pub fn deep_linking_error_to_string_conversion_test() {
   errors.deep_linking_error_to_string(errors.DeepLinkingClaimMissing)
   |> should.equal("Missing required deep-linking claim.")
+}
+
+pub fn deep_linking_profile_error_to_string_conversion_test() {
+  errors.deep_linking_error_to_string(errors.DeepLinkingProfileClaimInvalid(
+    "aud",
+  ))
+  |> should.equal("Deep-linking profile output has invalid claim type: aud.")
 }
 
 fn decode_claim_string(claims, key: String) -> Result(String, String) {

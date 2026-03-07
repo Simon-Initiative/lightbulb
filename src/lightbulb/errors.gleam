@@ -55,6 +55,9 @@ pub fn core_error_to_string(error: CoreError) -> String {
 pub type DeepLinkingError {
   DeepLinkingClaimMissing
   DeepLinkingClaimInvalid
+  DeepLinkingProfileInvalid
+  DeepLinkingProfileClaimMissing(claim: String)
+  DeepLinkingProfileClaimInvalid(claim: String)
   DeepLinkingSettingsInvalid
   DeepLinkingResponseInvalidItemType
   DeepLinkingResponseMultipleNotAllowed
@@ -67,6 +70,11 @@ pub fn deep_linking_error_to_string(error: DeepLinkingError) -> String {
   case error {
     DeepLinkingClaimMissing -> "Missing required deep-linking claim."
     DeepLinkingClaimInvalid -> "Deep-linking claim has invalid format."
+    DeepLinkingProfileInvalid -> "Deep-linking profile transform failed."
+    DeepLinkingProfileClaimMissing(claim) ->
+      "Deep-linking profile output is missing required claim: " <> claim <> "."
+    DeepLinkingProfileClaimInvalid(claim) ->
+      "Deep-linking profile output has invalid claim type: " <> claim <> "."
     DeepLinkingSettingsInvalid -> "Deep-linking settings are invalid."
     DeepLinkingResponseInvalidItemType ->
       "Response contains an unsupported item type."
