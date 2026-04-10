@@ -190,7 +190,7 @@ pub fn build_response_jwt(
 /// Builds and signs a Deep Linking response JWT with a claim-shaping profile.
 ///
 /// Profiles:
-/// - `Standard`: current/default claim shape.
+/// - `Standard`: standards-oriented claim shape (`iss = client_id`, `aud = platform_issuer`).
 /// - `Canvas`: Canvas-compatible identity claim shape.
 /// - `Custom`: caller-provided transform over standard claims.
 pub fn build_response_jwt_with_profile(
@@ -265,6 +265,7 @@ fn build_standard_response_claims(
   options options: DeepLinkingResponseOptions,
 ) -> Result(jose.Claims, DeepLinkingError) {
   use platform_issuer <- result.try(required_claim_string(request_claims, "iss"))
+  use client_id <- result.try(resolve_request_client_id(request_claims))
   use deployment_id <- result.try(required_claim_string(
     request_claims,
     claim_deployment_id,
@@ -272,6 +273,7 @@ fn build_standard_response_claims(
 
   Ok(
     dict.from_list([
+      #("iss", dynamic.string(client_id)),
       #("aud", dynamic.string(platform_issuer)),
       #(
         claim_message_type,
@@ -387,6 +389,7 @@ fn validate_final_response_claims(
   use _ <- result.try(validate_required_int_claims(claims, ["iat", "exp"]))
 
   case profile {
+    Standard -> validate_required_string_claims(claims, ["iss"])
     Canvas -> validate_required_string_claims(claims, ["iss", "sub", "azp"])
     _ -> Ok(Nil)
   }

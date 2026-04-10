@@ -162,7 +162,8 @@ claims, building signed response JWTs, and constructing form-post payloads for t
 
 Use response JWT profiles when you need LMS-specific deep-link JWT semantics:
 
-- `deep_linking.Standard`: default standards-oriented behavior (same as `build_response_jwt`).
+- `deep_linking.Standard`: default standards-oriented behavior with
+  `iss = client_id` and `aud = platform_issuer` (same as `build_response_jwt`).
 - `deep_linking.Canvas`: Canvas-compatible identity claims.
 - `deep_linking.Custom(fn(claims, context) { ... })`: custom claim transforms.
 
@@ -195,7 +196,8 @@ deep_linking.build_response_jwt_with_profile(
 
 Migration note:
 
-- Existing `build_response_jwt` callers require no changes; the function retains prior behavior.
+- Existing `build_response_jwt` callers require no API changes; Standard responses
+  now include the required `iss` claim derived from request `aud`.
 - Adopt `build_response_jwt_with_profile` only when LMS-specific shaping is required.
 
 ### OAuth Service Tokens

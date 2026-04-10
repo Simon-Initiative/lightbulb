@@ -66,6 +66,9 @@
 
 ### Bug Fixes
 
+- Standard deep-linking response JWTs now include the required `iss` claim,
+  derived as `iss = client_id` with `aud = platform_issuer`, and reject builds
+  when the source client id cannot be derived from request `aud`.
 - Core launch validation now requires persisted login context and enforces state and
   `target_link_uri` consistency between OIDC login and launch validation.
 - Core audience handling now supports `aud` as string or list and enforces `azp`

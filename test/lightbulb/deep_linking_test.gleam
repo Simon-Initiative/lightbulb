@@ -41,6 +41,7 @@ pub fn build_response_jwt_test() {
   let request_claims =
     dict.from_list([
       #("iss", dynamic.string("https://platform.example.com")),
+      #("aud", dynamic.string("tool-client-id")),
       #(deep_linking.claim_deployment_id, dynamic.string("deployment-123")),
     ])
 
@@ -94,6 +95,9 @@ pub fn build_response_jwt_test() {
 
   decode_claim_string(verified_jwt.claims, "aud")
   |> should.equal(Ok("https://platform.example.com"))
+
+  decode_claim_string(verified_jwt.claims, "iss")
+  |> should.equal(Ok("tool-client-id"))
 
   decode_claim_string(verified_jwt.claims, deep_linking.claim_message_type)
   |> should.equal(Ok(deep_linking.lti_message_type_deep_linking_response))
@@ -149,10 +153,37 @@ pub fn build_response_jwt_with_standard_profile_test() {
   |> should.equal(Ok("https://platform.example.com"))
 
   decode_claim_string(verified_jwt.claims, "iss")
-  |> should.equal(Error("missing"))
+  |> should.equal(Ok("tool-client-id"))
 
   decode_claim_string(verified_jwt.claims, "azp")
   |> should.equal(Error("missing"))
+}
+
+pub fn build_response_jwt_with_standard_profile_missing_aud_test() {
+  let assert Ok(active_jwk) = jwk.generate()
+
+  let request_claims =
+    dict.from_list([
+      #("iss", dynamic.string("https://platform.example.com")),
+      #(deep_linking.claim_deployment_id, dynamic.string("deployment-123")),
+    ])
+
+  let assert Ok(settings) =
+    deep_linking.get_deep_linking_settings(
+      dict.from_list([
+        #(settings.claim_deep_linking_settings, dynamic_settings_claim()),
+      ]),
+    )
+
+  deep_linking.build_response_jwt_with_profile(
+    request_claims,
+    settings,
+    [],
+    deep_linking.default_response_options(),
+    active_jwk,
+    deep_linking.Standard,
+  )
+  |> should.equal(Error(errors.DeepLinkingProfileClaimMissing("aud")))
 }
 
 pub fn build_response_jwt_with_canvas_profile_test() {
